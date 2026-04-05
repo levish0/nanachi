@@ -33,7 +33,7 @@ pub(crate) fn generate_expr(expr: &Expr) -> TokenStream {
                     quote! { (#code).void() }
                 })
                 .collect();
-            quote! { alt((#(#items),*)) }
+            generate_alt(items)
         }
 
         Expr::Repeat { expr, kind } => generate_repeat(expr, kind),
@@ -227,5 +227,23 @@ fn generate_depth_limit(dl: &DepthLimitExpr) -> TokenStream {
             input.state.decrement_counter("__recursion_depth", 1);
             result
         })
+    }
+}
+
+/// Generate nested `alt()` calls, chunking into groups of 21 to stay within
+/// winnow's tuple size limit.
+fn generate_alt(items: Vec<TokenStream>) -> TokenStream {
+    const MAX: usize = 21;
+    if items.len() <= MAX {
+        quote! { alt((#(#items),*)) }
+    } else {
+        let chunks: Vec<_> = items
+            .chunks(MAX)
+            .map(|chunk| {
+                let chunk = chunk.to_vec();
+                quote! { alt((#(#chunk),*)) }
+            })
+            .collect();
+        generate_alt(chunks)
     }
 }

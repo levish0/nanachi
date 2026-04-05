@@ -207,3 +207,19 @@ fn generates_builtin_exprs() {
     assert!(code.contains("eof"));
     assert!(code.contains("any"));
 }
+
+#[test]
+fn generates_nested_alt_for_large_choice() {
+    // 25 branches — should produce nested alt() calls
+    let branches: Vec<_> = (0..25).map(|i| format!(r#""x{i}""#)).collect();
+    let choice = branches.join(" | ");
+    let source = format!("big = {{ {choice} }}");
+    let code = generate_code(&source);
+
+    // Should have multiple alt( calls due to chunking
+    let alt_count = code.matches("alt (").count();
+    assert!(
+        alt_count >= 2,
+        "expected nested alt calls for 25 branches, got {alt_count} alt() calls"
+    );
+}
