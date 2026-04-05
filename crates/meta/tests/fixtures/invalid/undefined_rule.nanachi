@@ -1,0 +1,2 @@
+/* References a rule that doesn't exist */
+a = { b }

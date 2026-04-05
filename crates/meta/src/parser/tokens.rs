@@ -7,15 +7,33 @@ use super::error::ParseError;
 pub(crate) struct TokenStream<'src> {
     tokens: Vec<(Token<'src>, std::ops::Range<usize>)>,
     pos: usize,
+    source_len: usize,
 }
 
 impl<'src> TokenStream<'src> {
-    pub fn new(source: &'src str) -> Self {
-        let tokens: Vec<_> = Token::lexer(source)
-            .spanned()
-            .filter_map(|(tok, span)| tok.ok().map(|t| (t, span)))
-            .collect();
-        TokenStream { tokens, pos: 0 }
+    pub fn new(source: &'src str) -> Result<Self, ParseError> {
+        let mut tokens = Vec::new();
+
+        for (result, span) in Token::lexer(source).spanned() {
+            match result {
+                Ok(tok) => tokens.push((tok, span)),
+                Err(()) => {
+                    return Err(ParseError {
+                        message: format!(
+                            "unexpected character '{}'",
+                            &source[span.start..span.end]
+                        ),
+                        offset: span.start,
+                    });
+                }
+            }
+        }
+
+        Ok(TokenStream {
+            tokens,
+            pos: 0,
+            source_len: source.len(),
+        })
     }
 
     pub fn peek(&self) -> Option<&Token<'src>> {
@@ -26,7 +44,7 @@ impl<'src> TokenStream<'src> {
         self.tokens
             .get(self.pos)
             .map(|(_, span)| span.start)
-            .unwrap_or(0)
+            .unwrap_or(self.source_len)
     }
 
     pub fn advance(&mut self) -> Option<Token<'src>> {

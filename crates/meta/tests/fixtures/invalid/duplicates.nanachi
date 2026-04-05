@@ -1,0 +1,6 @@
+/* Duplicate definitions */
+let flag x
+let flag x
+
+a = { "hello" }
+a = { "world" }

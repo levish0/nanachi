@@ -1,0 +1,13 @@
+/* Uses flag where counter expected and vice versa */
+let flag inside_bold
+let counter section_counter
+
+bad_emit = {
+    emit inside_bold
+    ANY
+}
+
+bad_guard = {
+    guard section_counter > 0
+    with inside_bold { ANY }
+}

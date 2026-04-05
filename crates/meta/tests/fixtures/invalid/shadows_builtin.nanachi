@@ -1,0 +1,2 @@
+/* Rule name shadows a built-in */
+SOI = { "start" }

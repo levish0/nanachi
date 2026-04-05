@@ -1,0 +1,5 @@
+/* Uses state variable without declaring it */
+bold = {
+    guard !inside_bold
+    "**" ANY+ "**"
+}
