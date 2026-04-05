@@ -5,6 +5,10 @@ fn lex(input: &str) -> Vec<Token<'_>> {
     Token::lexer(input).filter_map(|t| t.ok()).collect()
 }
 
+fn lex_results(input: &str) -> Vec<Result<Token<'_>, ()>> {
+    Token::lexer(input).collect()
+}
+
 #[test]
 fn lex_state_declaration() {
     let tokens = lex("let flag inside_bold");
@@ -232,4 +236,45 @@ fn lex_unicode_char_range() {
 fn lex_emoji_string_literal() {
     let tokens = lex(r#""🎉""#);
     assert_eq!(tokens, vec![Token::StringLit("🎉")]);
+}
+
+#[test]
+fn lex_keyword_prefixes_stay_identifiers() {
+    let tokens = lex("letter whenish depth_limiter SOIX LINE_ENDING");
+    assert_eq!(
+        tokens,
+        vec![
+            Token::Ident("letter"),
+            Token::Ident("whenish"),
+            Token::Ident("depth_limiter"),
+            Token::Ident("SOIX"),
+            Token::Ident("LINE_ENDING"),
+        ]
+    );
+}
+
+#[test]
+fn lex_string_literal_with_escapes() {
+    let tokens = lex(r#""\n\t\\\"""#);
+    assert_eq!(tokens, vec![Token::StringLit(r#"\n\t\\\""#)]);
+}
+
+#[test]
+fn lex_escaped_char_literals() {
+    let tokens = lex(r"'\n' '\t' '\\' '\''");
+    assert_eq!(
+        tokens,
+        vec![
+            Token::CharLit('\n'),
+            Token::CharLit('\t'),
+            Token::CharLit('\\'),
+            Token::CharLit('\''),
+        ]
+    );
+}
+
+#[test]
+fn lex_unexpected_character_returns_error_token() {
+    let tokens = lex_results("rule @");
+    assert_eq!(tokens, vec![Ok(Token::Ident("rule")), Err(())]);
 }

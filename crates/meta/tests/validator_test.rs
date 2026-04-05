@@ -23,6 +23,11 @@ fn validate_invalid(name: &str) -> Vec<ValidationError> {
     validator::validate(&grammar).expect_err(&format!("{name} should have validation errors"))
 }
 
+fn validate_invalid_source(source: &str) -> Vec<ValidationError> {
+    let grammar = parser::parse(source).unwrap();
+    validator::validate(&grammar).expect_err("source should have validation errors")
+}
+
 // ── Valid grammars should pass ──
 
 #[test]
@@ -92,4 +97,86 @@ fn invalid_duplicates() {
             .iter()
             .any(|e| matches!(e, ValidationError::DuplicateRule { name } if name == "a"))
     );
+}
+
+#[test]
+fn invalid_nested_state_usage_inside_stateful_expressions() {
+    let errors = validate_invalid_source(
+        r#"
+let flag inside
+let counter depth
+inner = { "x" }
+entry = { with depth { when inside > 0 { inner } } }
+"#,
+    );
+
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::ExpectedFlag { name, used_in } if name == "depth" && used_in == "entry"
+    )));
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::ExpectedCounter { name, used_in } if name == "inside" && used_in == "entry"
+    )));
+}
+
+#[test]
+fn invalid_many_errors_are_accumulated() {
+    let errors = validate_invalid_source(
+        r#"
+let flag seen
+let flag seen
+
+entry = {
+    emit seen
+    with missing {
+        when seen > 0 { missing_rule }
+    }
+}
+
+entry = { with seen += 1 { other_missing } }
+"#,
+    );
+
+    assert!(
+        errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::DuplicateState { name } if name == "seen"))
+    );
+    assert!(
+        errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::DuplicateRule { name } if name == "entry"))
+    );
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::ExpectedCounter { name, used_in } if name == "seen" && used_in == "entry"
+    )));
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::UndefinedState { name, used_in } if name == "missing" && used_in == "entry"
+    )));
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::UndefinedRule { name, used_in } if name == "missing_rule" && used_in == "entry"
+    )));
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::UndefinedRule { name, used_in } if name == "other_missing" && used_in == "entry"
+    )));
+}
+
+#[test]
+fn valid_nested_state_usage_passes() {
+    let grammar = parser::parse(
+        r#"
+let flag inside
+let counter depth
+inner = { "x" }
+entry = { depth_limit(3) { with inside { when depth > 0 { inner } } } }
+"#,
+    )
+    .unwrap();
+
+    validator::validate(&grammar).unwrap();
 }

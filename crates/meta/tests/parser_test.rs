@@ -10,6 +10,14 @@ fn parse_fixture(name: &str) -> Grammar {
     parser::parse(&source).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
+fn parse_inline_expr(source: &str) -> Expr {
+    let grammar = parser::parse(source).unwrap();
+    let Item::RuleDef(rule) = &grammar.items[0] else {
+        panic!("expected RuleDef");
+    };
+    rule.body.expr.clone()
+}
+
 // ── Fixture-based tests ──
 
 #[test]
@@ -246,4 +254,152 @@ fn parse_empty_grammar() {
 fn parse_comments_only() {
     let grammar = parser::parse("// just a comment\n// another one\n").unwrap();
     assert!(grammar.items.is_empty());
+}
+
+#[test]
+fn parse_repeat_variants() {
+    assert_eq!(
+        parse_inline_expr(r#"exact = { "x"{2} }"#),
+        Expr::Repeat {
+            expr: Box::new(Expr::StringLit("x".to_string())),
+            kind: RepeatKind::Exact(2),
+        }
+    );
+    assert_eq!(
+        parse_inline_expr(r#"at_least = { "x"{2,} }"#),
+        Expr::Repeat {
+            expr: Box::new(Expr::StringLit("x".to_string())),
+            kind: RepeatKind::AtLeast(2),
+        }
+    );
+    assert_eq!(
+        parse_inline_expr(r#"at_most = { "x"{,3} }"#),
+        Expr::Repeat {
+            expr: Box::new(Expr::StringLit("x".to_string())),
+            kind: RepeatKind::AtMost(3),
+        }
+    );
+}
+
+#[test]
+fn parse_escaped_string_literal() {
+    assert_eq!(
+        parse_inline_expr("newline = { \"\\n\" }"),
+        Expr::StringLit("\n".to_string())
+    );
+    assert_eq!(
+        parse_inline_expr("tab = { \"\\t\" }"),
+        Expr::StringLit("\t".to_string())
+    );
+    assert_eq!(
+        parse_inline_expr("slash = { \"\\\\\" }"),
+        Expr::StringLit("\\".to_string())
+    );
+    assert_eq!(
+        parse_inline_expr("quote = { \"\\\"\" }"),
+        Expr::StringLit("\"".to_string())
+    );
+}
+
+#[test]
+fn parse_escaped_char_range() {
+    assert_eq!(
+        parse_inline_expr(r"linebreak = { '\n'..'\r' }"),
+        Expr::CharRange('\n', '\r')
+    );
+}
+
+#[test]
+fn parse_positive_lookahead_group_sequence() {
+    assert_eq!(
+        parse_inline_expr(r#"rule = { &("a" | "b") "c" }"#),
+        Expr::Seq(vec![
+            Expr::PosLookahead(Box::new(Expr::Group(Box::new(Expr::Choice(vec![
+                Expr::StringLit("a".to_string()),
+                Expr::StringLit("b".to_string()),
+            ]))))),
+            Expr::StringLit("c".to_string()),
+        ])
+    );
+}
+
+#[test]
+fn parse_choice_has_lower_precedence_than_sequence() {
+    assert_eq!(
+        parse_inline_expr(r#"rule = { "a" | "b" "c" }"#),
+        Expr::Choice(vec![
+            Expr::StringLit("a".to_string()),
+            Expr::Seq(vec![
+                Expr::StringLit("b".to_string()),
+                Expr::StringLit("c".to_string()),
+            ]),
+        ])
+    );
+}
+
+#[test]
+fn parse_nested_stateful_expression_combo() {
+    let grammar = parser::parse(
+        r#"
+let flag inside
+let counter depth
+inner = { "x" }
+rule = { depth_limit(3) { with inside { when depth > 0 { inner } } } }
+"#,
+    )
+    .unwrap();
+
+    let Item::RuleDef(rule) = &grammar.items[3] else {
+        panic!("expected RuleDef");
+    };
+    let Expr::DepthLimit(depth_limit) = &rule.body.expr else {
+        panic!("expected DepthLimit expr");
+    };
+    assert_eq!(depth_limit.limit, 3);
+
+    let Expr::With(with_expr) = depth_limit.body.as_ref() else {
+        panic!("expected With expr");
+    };
+    assert_eq!(with_expr.flag, "inside");
+
+    let Expr::When(when_expr) = with_expr.body.as_ref() else {
+        panic!("expected When expr");
+    };
+    assert_eq!(
+        when_expr.condition,
+        GuardCondition::Compare {
+            name: "depth".to_string(),
+            op: CompareOp::Gt,
+            value: 0,
+        }
+    );
+    assert_eq!(when_expr.body.as_ref(), &Expr::Ident("inner".to_string()));
+}
+
+#[test]
+fn parse_rejects_unexpected_character() {
+    let err = parser::parse(r#"rule = { "x" @ "y" }"#).unwrap_err();
+    assert_eq!(err.offset, 13);
+    assert!(err.message.contains("unexpected character '@'"));
+}
+
+#[test]
+fn parse_rejects_single_char_literal_without_range() {
+    let err = parser::parse(r"rule = { '\n' }").unwrap_err();
+    assert_eq!(err.offset, 14);
+    assert!(err.message.contains("expected DotDot"));
+}
+
+#[test]
+fn parse_rejects_malformed_repeat_bounds() {
+    let err = parser::parse(r#"rule = { "x"{1,foo} }"#).unwrap_err();
+    assert_eq!(err.offset, 12);
+    assert!(err.message.contains("expected RBrace"));
+}
+
+#[test]
+fn parse_rejects_builtin_as_rule_name() {
+    let err = parser::parse(r#"SOI = { "x" }"#).unwrap_err();
+    assert_eq!(err.offset, 0);
+    assert!(err.message.contains("expected 'let' or rule name"));
 }
