@@ -21,3 +21,4 @@ proc-macro2.workspace = true
 [dev-dependencies]
 nanachi.workspace = true
 nanachi_derive = { path = "." }
+trybuild.workspace = true

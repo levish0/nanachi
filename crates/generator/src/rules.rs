@@ -32,17 +32,21 @@ fn generate_rule(rule: &RuleDef) -> TokenStream {
     if has_statements {
         quote! {
             fn #fn_name<'i>(input: &mut Input<'i, ParseState>) -> ModalResult<&'i str> {
+                input.state.track_pos(input.current_token_start());
                 winnow::combinator::trace(#rule_name, |input: &mut Input<'i, ParseState>| {
                     #guard_code
                     (#expr_code).take().parse_next(input)
                 })
+                .context(StrContext::Label(#rule_name))
                 .parse_next(input)
             }
         }
     } else {
         quote! {
             fn #fn_name<'i>(input: &mut Input<'i, ParseState>) -> ModalResult<&'i str> {
+                input.state.track_pos(input.current_token_start());
                 winnow::combinator::trace(#rule_name, (#expr_code).take())
+                    .context(StrContext::Label(#rule_name))
                     .parse_next(input)
             }
         }

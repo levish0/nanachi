@@ -30,3 +30,35 @@ fn main() {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Json;
+
+    #[test]
+    fn sample_json_parses() {
+        let sample = include_str!("../sample.json");
+        assert_eq!(Json::parse_json(sample).unwrap(), sample);
+    }
+
+    #[test]
+    fn json_accepts_scalar_with_whitespace() {
+        assert_eq!(Json::parse_json(" \n null \n ").unwrap(), " \n null \n ");
+    }
+
+    #[test]
+    fn json_rejects_trailing_comma() {
+        Json::parse_json(r#"{"a":1,}"#).unwrap_err();
+    }
+
+    #[test]
+    fn json_rejects_unclosed_object() {
+        Json::parse_json(r#"{"a":1"#).unwrap_err();
+    }
+
+    #[test]
+    fn string_rule_accepts_escapes() {
+        assert_eq!(Json::parse_string(r#""line\nbreak""#).unwrap(), r#""line\nbreak""#);
+        assert_eq!(Json::parse_string(r#""\u0041""#).unwrap(), r#""\u0041""#);
+    }
+}

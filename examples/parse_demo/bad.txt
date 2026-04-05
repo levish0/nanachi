@@ -1,0 +1,4 @@
+x=10
+123=bad
+foo=bar
+=oops

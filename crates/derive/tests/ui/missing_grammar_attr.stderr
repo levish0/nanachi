@@ -1,0 +1,5 @@
+error: expected #[grammar = "path"] or #[grammar_inline = "..."]
+ --> tests/ui/missing_grammar_attr.rs:4:8
+  |
+4 | struct MissingGrammarAttr;
+  |        ^^^^^^^^^^^^^^^^^^

@@ -1,0 +1,5 @@
+error: expected string literal
+ --> tests/ui/non_string_grammar_attr.rs:4:11
+  |
+4 | #[grammar(123)]
+  |           ^^^

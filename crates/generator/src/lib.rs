@@ -11,15 +11,14 @@ fn generate_module_inner(grammar: &Grammar) -> TokenStream {
     let state_code = state::generate_state(grammar);
     let rules_code = rules::generate_rules(grammar);
     let entry_code = generate_entry(grammar);
-
     quote::quote! {
         use nanachi::winnow;
         use nanachi::winnow::prelude::*;
         use nanachi::winnow::combinator::*;
         use nanachi::winnow::token::*;
         use nanachi::winnow::stream::Location;
-        use nanachi::{Input, State};
-
+        use nanachi::winnow::error::{StrContext, StrContextValue};
+        use nanachi::{Input, LineIndex, State};
         #state_code
         #rules_code
         #entry_code
@@ -60,17 +59,32 @@ fn generate_entry(grammar: &Grammar) -> TokenStream {
                 let rule_fn = format_ident!("{}", rule.name);
                 Some(quote! {
                     pub fn #parse_fn(source: &str) -> Result<&str, String> {
+                        let line_index = LineIndex::new(source);
                         let state = ParseState::new(source);
                         let mut input = Input {
                             input: nanachi::LocatingSlice::new(source),
                             state,
                         };
                         let matched = #rule_fn.parse_next(&mut input)
-                            .map_err(|e| format!("{e}"))?;
+                            .map_err(|e| {
+                                let offset = input.state.furthest_pos();
+                                let (line, col) = line_index.line_col(offset);
+                                let inner = match e {
+                                    winnow::error::ErrMode::Backtrack(c)
+                                    | winnow::error::ErrMode::Cut(c) => format!("{c}"),
+                                    _ => format!("{e}"),
+                                };
+                                if inner.is_empty() {
+                                    format!("parse error at {line}:{col}")
+                                } else {
+                                    format!("parse error at {line}:{col}: {inner}")
+                                }
+                            })?;
                         if !input.input.is_empty() {
+                            let offset = input.current_token_start();
+                            let (line, col) = line_index.line_col(offset);
                             return Err(format!(
-                                "unexpected trailing input at position {}",
-                                input.current_token_start()
+                                "unexpected trailing input at {line}:{col}"
                             ));
                         }
                         Ok(matched)

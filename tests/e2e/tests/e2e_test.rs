@@ -100,3 +100,134 @@ fn basic_rules_ident() {
 fn basic_rules_digit_rejects_alpha() {
     basic_rules::__nanachi::parse_digit("a").unwrap_err();
 }
+
+// ── Example: nested_braces ──
+
+mod nested_braces {
+    include!(concat!(env!("OUT_DIR"), "/example_nested_braces.rs"));
+}
+
+#[test]
+fn nested_braces_document_accepts_empty() {
+    assert_eq!(nested_braces::__nanachi::parse_document("").unwrap(), "");
+}
+
+#[test]
+fn nested_braces_block_parses_simple_block() {
+    assert_eq!(nested_braces::__nanachi::parse_block("{{{x}}}").unwrap(), "{{{x}}}");
+}
+
+#[test]
+fn nested_braces_block_rejects_unclosed_block() {
+    nested_braces::__nanachi::parse_block("{{{x}}").unwrap_err();
+}
+
+// ── Fixture: stateful_bold ──
+
+mod stateful_bold {
+    include!(concat!(env!("OUT_DIR"), "/fixture_stateful_bold.rs"));
+}
+
+#[test]
+fn stateful_bold_parses_text() {
+    assert_eq!(stateful_bold::__nanachi::parse_text("x").unwrap(), "x");
+}
+
+#[test]
+fn stateful_bold_parses_bold() {
+    assert_eq!(stateful_bold::__nanachi::parse_bold("**x**").unwrap(), "**x**");
+}
+
+#[test]
+fn stateful_bold_text_rejects_marker() {
+    stateful_bold::__nanachi::parse_text("**").unwrap_err();
+}
+
+// ── Fixture: nested_formatting ──
+
+mod nested_formatting {
+    include!(concat!(env!("OUT_DIR"), "/fixture_nested_formatting.rs"));
+}
+
+#[test]
+fn nested_formatting_parses_bold() {
+    assert_eq!(nested_formatting::__nanachi::parse_bold("**x**").unwrap(), "**x**");
+}
+
+#[test]
+fn nested_formatting_parses_header() {
+    assert_eq!(nested_formatting::__nanachi::parse_header("## x").unwrap(), "## x");
+}
+
+#[test]
+fn nested_formatting_text_rejects_format_marker() {
+    nested_formatting::__nanachi::parse_text("*").unwrap_err();
+}
+
+// ── Fixture: depth_and_braces ──
+
+mod depth_and_braces {
+    include!(concat!(env!("OUT_DIR"), "/fixture_depth_and_braces.rs"));
+}
+
+#[test]
+fn depth_and_braces_parses_raw_block() {
+    assert_eq!(depth_and_braces::__nanachi::parse_raw_block("{{{x}}}").unwrap(), "{{{x}}}");
+}
+
+#[test]
+fn depth_and_braces_parses_paragraph() {
+    assert_eq!(depth_and_braces::__nanachi::parse_paragraph("abc").unwrap(), "abc");
+}
+
+#[test]
+fn depth_and_braces_document_rejects_empty() {
+    depth_and_braces::__nanachi::parse_document("").unwrap_err();
+}
+
+// ── Fixture: when_conditional ──
+
+mod when_conditional {
+    include!(concat!(env!("OUT_DIR"), "/fixture_when_conditional.rs"));
+}
+
+#[test]
+fn when_conditional_parses_plain_newline() {
+    assert_eq!(when_conditional::__nanachi::parse_newline("\n").unwrap(), "\n");
+}
+
+#[test]
+fn when_conditional_rejects_non_newline() {
+    when_conditional::__nanachi::parse_newline("x").unwrap_err();
+}
+
+// ── Fixture: chaos_combo ──
+
+mod chaos_combo {
+    include!(concat!(env!("OUT_DIR"), "/fixture_chaos_combo.rs"));
+}
+
+#[test]
+fn chaos_combo_parses_name() {
+    assert_eq!(chaos_combo::__nanachi::parse_name("AbC").unwrap(), "AbC");
+}
+
+#[test]
+fn chaos_combo_tag_rejects_plain_angle_tag() {
+    chaos_combo::__nanachi::parse_tag("<Tag>").unwrap_err();
+}
+
+#[test]
+fn chaos_combo_parses_escaped_pair() {
+    assert_eq!(chaos_combo::__nanachi::parse_escaped("\\n\"").unwrap(), "\\n\"");
+}
+
+#[test]
+fn chaos_combo_text_rejects_tag_start() {
+    chaos_combo::__nanachi::parse_text("<").unwrap_err();
+}
+
+#[test]
+fn chaos_combo_document_parses_escaped_chunk() {
+    assert_eq!(chaos_combo::__nanachi::parse_document("\\n\"").unwrap(), "\\n\"");
+}

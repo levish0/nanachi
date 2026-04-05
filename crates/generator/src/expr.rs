@@ -6,11 +6,12 @@ use quote::{format_ident, quote};
 pub(crate) fn generate_expr(expr: &Expr) -> TokenStream {
     match expr {
         Expr::StringLit(s) => {
-            quote! { literal(#s) }
+            quote! { literal(#s).context(StrContext::Expected(StrContextValue::StringLiteral(#s))) }
         }
 
         Expr::CharRange(start, end) => {
-            quote! { one_of(#start..=#end) }
+            let desc = format!("'{}'..'{}'", start, end);
+            quote! { one_of(#start..=#end).context(StrContext::Expected(StrContextValue::Description(#desc))) }
         }
 
         Expr::Ident(name) => {

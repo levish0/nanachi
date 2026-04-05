@@ -12,3 +12,4 @@ categories.workspace = true
 
 [dependencies]
 winnow.workspace = true
+memchr.workspace = true

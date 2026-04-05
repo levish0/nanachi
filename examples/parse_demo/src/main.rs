@@ -29,3 +29,31 @@ fn main() {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Demo;
+
+    #[test]
+    fn sample_lines_parse() {
+        for line in include_str!("../sample.txt").lines() {
+            assert_eq!(Demo::parse_assign(line).unwrap(), line);
+        }
+    }
+
+    #[test]
+    fn assign_rejects_missing_rhs() {
+        Demo::parse_assign("x=").unwrap_err();
+    }
+
+    #[test]
+    fn assign_rejects_digit_lhs() {
+        Demo::parse_assign("1x=2").unwrap_err();
+    }
+
+    #[test]
+    fn ident_and_number_rules_work() {
+        assert_eq!(Demo::parse_ident("hello123").unwrap(), "hello123");
+        assert_eq!(Demo::parse_number("42").unwrap(), "42");
+    }
+}

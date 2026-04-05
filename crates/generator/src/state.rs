@@ -74,6 +74,7 @@ pub(crate) fn generate_state(grammar: &Grammar) -> TokenStream {
         #[derive(Debug, Clone, Default)]
         pub struct ParseState {
             original_input: Vec<u8>,
+            furthest_pos: usize,
             #(#flag_fields,)*
             #(#counter_fields,)*
         }
@@ -84,6 +85,18 @@ pub(crate) fn generate_state(grammar: &Grammar) -> TokenStream {
                     original_input: input.as_bytes().to_vec(),
                     ..Default::default()
                 }
+            }
+
+            /// Track the furthest position reached during parsing.
+            pub fn track_pos(&mut self, pos: usize) {
+                if pos > self.furthest_pos {
+                    self.furthest_pos = pos;
+                }
+            }
+
+            /// Return the furthest position reached.
+            pub fn furthest_pos(&self) -> usize {
+                self.furthest_pos
             }
         }
 
