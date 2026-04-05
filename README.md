@@ -1,1 +1,1 @@
-A stateful 
+A stateful parser generator 

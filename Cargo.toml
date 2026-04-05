@@ -1,9 +1,33 @@
-[package]
-name = "nanachi"
+[workspace]
+members = ["crates/*", "xtask"]
+resolver = "3"
+
+[workspace.package]
 version = "0.1.0"
-edition = "2024"
+authors = ["Levi Laine <shiueo.csh@gmail.com>"]
 license = "Apache-2.0"
 repository = "https://github.com/levish0/nanachi"
 description = "A stateful parser generator"
+edition = "2024"
+rust-version = "1.85.0"
+keywords = ["parser", "grammar", "stateful", "codegen"]
+categories = ["parsing"]
+readme = "README.md"
 
-[dependencies]
+[workspace.dependencies]
+# Internal crates
+nanachi = { path = "crates/nanachi", version = "0.1.0" }
+nanachi_meta = { path = "crates/meta", version = "0.1.0" }
+nanachi_generator = { path = "crates/generator", version = "0.1.0" }
+nanachi_derive = { path = "crates/derive", version = "0.1.0" }
+nanachi_vm = { path = "crates/vm", version = "0.1.0" }
+nanachi_debugger = { path = "crates/debugger", version = "0.1.0" }
+
+# External dependencies
+winnow = "1.0.1"
+proc-macro2 = "1.0.106"
+quote = "1.0.45"
+syn = "2.0.117"
+
+[profile.dev]
+opt-level = 1

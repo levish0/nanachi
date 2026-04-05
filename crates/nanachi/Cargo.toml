@@ -1,0 +1,14 @@
+[package]
+name = "nanachi"
+description = "A stateful parser generator"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+winnow.workspace = true
