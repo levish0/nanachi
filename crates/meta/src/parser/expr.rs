@@ -1,5 +1,5 @@
 use crate::ast::*;
-use crate::lexer::Token;
+use crate::lexer::{self, Token};
 
 use super::error::ParseError;
 use super::statement::parse_guard_condition;
@@ -160,7 +160,7 @@ fn parse_atom(tokens: &mut TokenStream<'_>) -> Result<Expr, ParseError> {
     match tokens.peek() {
         Some(Token::StringLit(_)) => {
             if let Some(Token::StringLit(s)) = tokens.advance() {
-                Ok(Expr::StringLit(s.to_string()))
+                Ok(Expr::StringLit(lexer::unescape_str(s)))
             } else {
                 unreachable!()
             }

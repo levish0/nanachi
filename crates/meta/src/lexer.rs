@@ -40,12 +40,14 @@ pub enum Token<'src> {
     LineEnd,
 
     // ── Literals ──
-    #[regex(r#""[^"]*""#, |lex| &lex.source()[lex.span().start + 1..lex.span().end - 1])]
+    // Strings may contain escape sequences: \n \t \r \\ \"
+    #[regex(r#""([^"\\]|\\.)*""#, |lex| &lex.source()[lex.span().start + 1..lex.span().end - 1])]
     StringLit(&'src str),
 
-    #[regex(r"'[^']'", |lex| {
+    // Chars may contain escape: '\n', '\t', '\\'
+    #[regex(r"'([^'\\]|\\.)'", |lex| {
         let inner = &lex.source()[lex.span().start + 1..lex.span().end - 1];
-        inner.chars().next()
+        unescape_char(inner)
     })]
     CharLit(char),
 
@@ -100,4 +102,44 @@ pub enum Token<'src> {
     Comma,
     #[token(":")]
     Colon,
+}
+
+fn unescape_char(s: &str) -> Option<char> {
+    let mut chars = s.chars();
+    match chars.next()? {
+        '\\' => match chars.next()? {
+            'n' => Some('\n'),
+            't' => Some('\t'),
+            'r' => Some('\r'),
+            '\\' => Some('\\'),
+            '\'' => Some('\''),
+            _ => None,
+        },
+        c => Some(c),
+    }
+}
+
+/// Unescape a string literal body (between the quotes).
+pub fn unescape_str(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.next() {
+                Some('n') => result.push('\n'),
+                Some('t') => result.push('\t'),
+                Some('r') => result.push('\r'),
+                Some('\\') => result.push('\\'),
+                Some('"') => result.push('"'),
+                Some(other) => {
+                    result.push('\\');
+                    result.push(other);
+                }
+                None => result.push('\\'),
+            }
+        } else {
+            result.push(c);
+        }
+    }
+    result
 }

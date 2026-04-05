@@ -3,7 +3,7 @@ use nanachi_meta::parser;
 
 fn parse_fixture(name: &str) -> Grammar {
     let path = format!(
-        "{}/tests/fixtures/{name}.nanachi",
+        "{}/tests/fixtures/valid/{name}.nanachi",
         env!("CARGO_MANIFEST_DIR")
     );
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
