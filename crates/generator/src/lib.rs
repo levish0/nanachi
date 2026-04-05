@@ -53,7 +53,7 @@ fn generate_entry(grammar: &Grammar) -> TokenStream {
             if !input.input.is_empty() {
                 return Err(format!(
                     "unexpected trailing input at position {}",
-                    input.input.location()
+                    input.current_token_start()
                 ));
             }
             Ok(())

@@ -63,7 +63,7 @@ fn generate_builtin_expr(builtin: &BuiltinPredicate) -> TokenStream {
             // SOI as expression: succeed if at position 0
             quote! {
                 winnow::combinator::trace("SOI", |input: &mut Input<'_, ParseState>| {
-                    if input.input.location() == 0 {
+                    if input.current_token_start() == 0 {
                         Ok(())
                     } else {
                         Err(winnow::error::ErrMode::Backtrack(
@@ -82,7 +82,7 @@ fn generate_builtin_expr(builtin: &BuiltinPredicate) -> TokenStream {
         BuiltinPredicate::LineStart => {
             quote! {
                 winnow::combinator::trace("LINE_START", |input: &mut Input<'_, ParseState>| {
-                    let pos = input.input.location();
+                    let pos = input.current_token_start();
                     if input.state.is_at_line_start(pos) {
                         Ok(())
                     } else {
@@ -96,7 +96,7 @@ fn generate_builtin_expr(builtin: &BuiltinPredicate) -> TokenStream {
         BuiltinPredicate::LineEnd => {
             quote! {
                 winnow::combinator::trace("LINE_END", |input: &mut Input<'_, ParseState>| {
-                    let pos = input.input.location();
+                    let pos = input.current_token_start();
                     if input.state.is_at_line_end(pos) {
                         Ok(())
                     } else {
@@ -112,26 +112,29 @@ fn generate_builtin_expr(builtin: &BuiltinPredicate) -> TokenStream {
 
 fn generate_repeat(expr: &Expr, kind: &RepeatKind) -> TokenStream {
     let inner = generate_expr(expr);
+    // All repeats collect into () since we .void() at rule level.
+    // Use fold to avoid Accumulate<()> ambiguity.
+    let fold = quote! { .fold(|| (), |(), _| ()) };
     match kind {
-        RepeatKind::ZeroOrMore => quote! { repeat(0.., #inner) },
-        RepeatKind::OneOrMore => quote! { repeat(1.., #inner) },
+        RepeatKind::ZeroOrMore => quote! { repeat(0.., #inner)#fold },
+        RepeatKind::OneOrMore => quote! { repeat(1.., #inner)#fold },
         RepeatKind::Optional => quote! { opt(#inner) },
         RepeatKind::Exact(n) => {
             let n = *n as usize;
-            quote! { repeat(#n, #inner) }
+            quote! { repeat(#n, #inner)#fold }
         }
         RepeatKind::AtLeast(n) => {
             let n = *n as usize;
-            quote! { repeat(#n.., #inner) }
+            quote! { repeat(#n.., #inner)#fold }
         }
         RepeatKind::AtMost(m) => {
             let m = *m as usize;
-            quote! { repeat(..=#m, #inner) }
+            quote! { repeat(..=#m, #inner)#fold }
         }
         RepeatKind::Range(n, m) => {
             let n = *n as usize;
             let m = *m as usize;
-            quote! { repeat(#n..=#m, #inner) }
+            quote! { repeat(#n..=#m, #inner)#fold }
         }
     }
 }
@@ -182,13 +185,15 @@ fn generate_condition_check(condition: &GuardCondition) -> TokenStream {
     match condition {
         GuardCondition::NotFlag(name) => quote! { !input.state.get_flag(#name) },
         GuardCondition::IsFlag(name) => quote! { input.state.get_flag(#name) },
-        GuardCondition::Builtin(BuiltinPredicate::Soi) => quote! { input.input.location() == 0 },
+        GuardCondition::Builtin(BuiltinPredicate::Soi) => {
+            quote! { input.current_token_start() == 0 }
+        }
         GuardCondition::Builtin(BuiltinPredicate::Eoi) => quote! { input.input.is_empty() },
         GuardCondition::Builtin(BuiltinPredicate::LineStart) => {
-            quote! { input.state.is_at_line_start(input.input.location()) }
+            quote! { input.state.is_at_line_start(input.current_token_start()) }
         }
         GuardCondition::Builtin(BuiltinPredicate::LineEnd) => {
-            quote! { input.state.is_at_line_end(input.input.location()) }
+            quote! { input.state.is_at_line_end(input.current_token_start()) }
         }
         GuardCondition::Builtin(BuiltinPredicate::Any) => quote! { true },
         GuardCondition::Compare { name, op, value } => {

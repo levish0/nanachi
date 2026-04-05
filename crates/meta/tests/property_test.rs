@@ -80,20 +80,28 @@ fn expr_strategy() -> BoxedStrategy<String> {
 
     leaf.prop_recursive(4, 96, 8, |inner| {
         prop_oneof![
-            (inner.clone(), repeat_suffix_strategy()).prop_map(|(expr, suffix)| format!("{expr}{suffix}")),
+            (inner.clone(), repeat_suffix_strategy())
+                .prop_map(|(expr, suffix)| format!("{expr}{suffix}")),
             prop::collection::vec(inner.clone(), 2..=3).prop_map(|parts| parts.join(" ")),
             prop::collection::vec(inner.clone(), 2..=3).prop_map(|parts| parts.join(" | ")),
             inner.clone().prop_map(|expr| format!("({expr})")),
             inner.clone().prop_map(|expr| format!("&({expr})")),
             inner.clone().prop_map(|expr| format!("!({expr})")),
-            inner.clone().prop_map(|expr| format!("with f0 {{ {expr} }}")),
+            inner
+                .clone()
+                .prop_map(|expr| format!("with f0 {{ {expr} }}")),
             (1u32..=3, inner.clone())
                 .prop_map(|(amount, expr)| format!("with c0 += {amount} {{ {expr} }}")),
-            inner.clone().prop_map(|expr| format!("when f0 {{ {expr} }}")),
-            inner.clone().prop_map(|expr| format!("when !f0 {{ {expr} }}")),
+            inner
+                .clone()
+                .prop_map(|expr| format!("when f0 {{ {expr} }}")),
+            inner
+                .clone()
+                .prop_map(|expr| format!("when !f0 {{ {expr} }}")),
             (0u32..=3, inner.clone())
                 .prop_map(|(value, expr)| format!("when c0 > {value} {{ {expr} }}")),
-            (1u32..=8, inner).prop_map(|(limit, expr)| format!("depth_limit({limit}) {{ {expr} }}")),
+            (1u32..=8, inner)
+                .prop_map(|(limit, expr)| format!("depth_limit({limit}) {{ {expr} }}")),
         ]
         .boxed()
     })
