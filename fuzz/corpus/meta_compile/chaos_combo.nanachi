@@ -1,0 +1,20 @@
+let flag inside_tag
+let counter nesting
+
+document = {
+    guard SOI
+    depth_limit(4) {
+        chunk+
+    }
+}
+
+chunk = { tag | escaped | text }
+tag = {
+    guard !inside_tag
+    with inside_tag {
+        "<" name with nesting += 1 { (when nesting > 0 { !"?>" ANY })* } ">"
+    }
+}
+name = { ('a'..'z' | 'A'..'Z'){1,} }
+escaped = { "\\n" "\"" }
+text = { !("<" | "?>") ANY }

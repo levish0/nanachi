@@ -1,0 +1,12 @@
+// Stateful parsing: bold markers with re-entrance prevention.
+
+let flag inside_bold
+
+inline = { bold | ANY }
+
+bold = {
+    guard !inside_bold
+    with inside_bold {
+        "**" inline+ "**"
+    }
+}

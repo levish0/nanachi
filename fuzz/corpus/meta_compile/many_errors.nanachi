@@ -1,0 +1,11 @@
+let flag seen
+let flag seen
+
+entry = {
+    emit seen
+    with missing {
+        when seen > 0 { missing_rule }
+    }
+}
+
+entry = { with seen += 1 { other_missing } }

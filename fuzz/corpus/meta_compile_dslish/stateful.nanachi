@@ -1,0 +1,4 @@
+let flag inside
+let counter depth
+inner = { "x" }
+entry = { depth_limit(3) { with inside { when depth > 0 { inner } } } }

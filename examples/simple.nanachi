@@ -1,0 +1,5 @@
+// A simple grammar: identifiers made of letters and digits.
+
+alpha = { 'a'..'z' | 'A'..'Z' }
+digit = { '0'..'9' }
+ident = { alpha (alpha | digit)* }

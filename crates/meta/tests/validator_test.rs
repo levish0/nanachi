@@ -1,11 +1,16 @@
 use nanachi_meta::parser;
 use nanachi_meta::validator::{self, ValidationError};
 
+fn workspace_root() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("failed to find workspace root")
+}
+
 fn validate_valid(name: &str) {
-    let path = format!(
-        "{}/tests/fixtures/valid/{name}.nanachi",
-        env!("CARGO_MANIFEST_DIR")
-    );
+    let path = workspace_root().join(format!("fixtures/valid/{name}.nanachi"));
+    let path = path.display().to_string();
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     let grammar = parser::parse(&source).unwrap_or_else(|e| panic!("{path}: {e}"));
     if let Err(errors) = validator::validate(&grammar) {
@@ -14,10 +19,8 @@ fn validate_valid(name: &str) {
 }
 
 fn validate_invalid(name: &str) -> Vec<ValidationError> {
-    let path = format!(
-        "{}/tests/fixtures/invalid/{name}.nanachi",
-        env!("CARGO_MANIFEST_DIR")
-    );
+    let path = workspace_root().join(format!("fixtures/invalid/{name}.nanachi"));
+    let path = path.display().to_string();
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     let grammar = parser::parse(&source).unwrap_or_else(|e| panic!("{path}: {e}"));
     validator::validate(&grammar).expect_err(&format!("{name} should have validation errors"))
@@ -53,6 +56,11 @@ fn valid_depth_and_braces() {
 #[test]
 fn valid_when_conditional() {
     validate_valid("when_conditional");
+}
+
+#[test]
+fn valid_chaos_combo() {
+    validate_valid("chaos_combo");
 }
 
 // ── Invalid grammars should produce errors ──
@@ -97,6 +105,47 @@ fn invalid_duplicates() {
             .iter()
             .any(|e| matches!(e, ValidationError::DuplicateRule { name } if name == "a"))
     );
+}
+
+#[test]
+fn invalid_nested_state_misuse_fixture() {
+    let errors = validate_invalid("nested_state_misuse");
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::ExpectedFlag { name, used_in } if name == "depth" && used_in == "entry"
+    )));
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::ExpectedCounter { name, used_in } if name == "inside" && used_in == "entry"
+    )));
+}
+
+#[test]
+fn invalid_many_errors_fixture() {
+    let errors = validate_invalid("many_errors");
+    assert!(errors.len() >= 6);
+    assert!(
+        errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::DuplicateState { name } if name == "seen"))
+    );
+    assert!(
+        errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::DuplicateRule { name } if name == "entry"))
+    );
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::UndefinedState { name, used_in } if name == "missing" && used_in == "entry"
+    )));
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::UndefinedRule { name, used_in } if name == "missing_rule" && used_in == "entry"
+    )));
+    assert!(errors.iter().any(|e| matches!(
+        e,
+        ValidationError::UndefinedRule { name, used_in } if name == "other_missing" && used_in == "entry"
+    )));
 }
 
 #[test]

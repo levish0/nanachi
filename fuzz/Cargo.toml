@@ -1,0 +1,31 @@
+[package]
+name = "nanachi_fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[features]
+fuzzing = ["dep:libfuzzer-sys"]
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+nanachi_meta.workspace = true
+libfuzzer-sys = { workspace = true, optional = true }
+
+[[bin]]
+name = "meta_compile"
+path = "fuzz_targets/meta_compile.rs"
+test = false
+doc = false
+bench = false
+required-features = ["fuzzing"]
+
+[[bin]]
+name = "meta_compile_dslish"
+path = "fuzz_targets/meta_compile_dslish.rs"
+test = false
+doc = false
+bench = false
+required-features = ["fuzzing"]

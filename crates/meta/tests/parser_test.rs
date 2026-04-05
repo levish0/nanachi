@@ -1,13 +1,25 @@
 use nanachi_meta::ast::*;
 use nanachi_meta::parser;
 
+fn workspace_root() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("failed to find workspace root")
+}
+
 fn parse_fixture(name: &str) -> Grammar {
-    let path = format!(
-        "{}/tests/fixtures/valid/{name}.nanachi",
-        env!("CARGO_MANIFEST_DIR")
-    );
+    let path = workspace_root().join(format!("fixtures/valid/{name}.nanachi"));
+    let path = path.display().to_string();
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     parser::parse(&source).unwrap_or_else(|e| panic!("{path}: {e}"))
+}
+
+fn parse_invalid_fixture(name: &str) -> nanachi_meta::parser::ParseError {
+    let path = workspace_root().join(format!("fixtures/syntax_invalid/{name}.nanachi"));
+    let path = path.display().to_string();
+    let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
+    parser::parse(&source).unwrap_err()
 }
 
 fn parse_inline_expr(source: &str) -> Expr {
@@ -176,6 +188,55 @@ fn parse_when_conditional() {
             op: CompareOp::Gt,
             value: 0,
         }
+    );
+}
+
+#[test]
+fn parse_chaos_combo_fixture() {
+    let grammar = parse_fixture("chaos_combo");
+    assert_eq!(grammar.items.len(), 8);
+
+    let Item::RuleDef(document) = &grammar.items[2] else {
+        panic!("expected RuleDef");
+    };
+    assert_eq!(document.name, "document");
+    assert_eq!(
+        document.body.statements,
+        vec![Statement::Guard(GuardStmt {
+            condition: GuardCondition::Builtin(BuiltinPredicate::Soi),
+        })]
+    );
+    let Expr::DepthLimit(limit) = &document.body.expr else {
+        panic!("expected DepthLimit");
+    };
+    assert_eq!(limit.limit, 4);
+
+    let Item::RuleDef(tag) = &grammar.items[4] else {
+        panic!("expected RuleDef");
+    };
+    let Expr::With(with_expr) = &tag.body.expr else {
+        panic!("expected With");
+    };
+    assert_eq!(with_expr.flag, "inside_tag");
+
+    let Expr::Seq(seq) = with_expr.body.as_ref() else {
+        panic!("expected sequence inside with");
+    };
+    assert!(matches!(
+        &seq[2],
+        Expr::WithIncrement(WithIncrementExpr { counter, amount, .. })
+            if counter == "nesting" && *amount == 1
+    ));
+
+    let Item::RuleDef(escaped) = &grammar.items[6] else {
+        panic!("expected RuleDef");
+    };
+    assert_eq!(
+        escaped.body.expr,
+        Expr::Seq(vec![
+            Expr::StringLit("\\n".to_string()),
+            Expr::StringLit("\"".to_string()),
+        ])
     );
 }
 
@@ -402,4 +463,27 @@ fn parse_rejects_builtin_as_rule_name() {
     let err = parser::parse(r#"SOI = { "x" }"#).unwrap_err();
     assert_eq!(err.offset, 0);
     assert!(err.message.contains("expected 'let' or rule name"));
+}
+
+#[test]
+fn parse_invalid_syntax_fixtures() {
+    let cases = [
+        ("unexpected_character", 13, "unexpected character '@'"),
+        ("unterminated_rule", 13, "expected RBrace"),
+        ("malformed_repeat", 12, "expected RBrace"),
+        ("bare_char_literal", 14, "expected DotDot"),
+        ("builtin_rule_name", 0, "expected 'let' or rule name"),
+        ("unsupported_state_kind", 10, "expected 'flag' or 'counter'"),
+        ("empty_rule_body", 9, "expected expression"),
+        ("dangling_choice", 15, "expected expression"),
+    ];
+
+    for (name, offset, message) in cases {
+        let err = parse_invalid_fixture(name);
+        assert_eq!(err.offset, offset, "fixture {name}");
+        assert!(
+            err.message.contains(message),
+            "fixture {name}: {err:?} does not contain {message:?}"
+        );
+    }
 }

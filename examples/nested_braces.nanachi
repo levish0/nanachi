@@ -1,0 +1,18 @@
+// Counter-based nesting: tracks brace depth.
+
+let counter brace_depth
+
+document = {
+    depth_limit(64) {
+        block*
+    }
+}
+
+block = {
+    "{{{" with brace_depth += 1 { raw_content* } "}}}"
+}
+
+raw_content = {
+    block
+    | !("}}}" ) ANY
+}

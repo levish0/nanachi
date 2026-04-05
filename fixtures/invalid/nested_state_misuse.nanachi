@@ -1,0 +1,4 @@
+let flag inside
+let counter depth
+inner = { "x" }
+entry = { with depth { when inside > 0 { inner } } }

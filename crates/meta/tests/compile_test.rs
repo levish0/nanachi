@@ -9,11 +9,34 @@ fn valid_fixture_source(name: &str) -> String {
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
+fn invalid_fixture_source(name: &str) -> String {
+    let path = format!(
+        "{}/tests/fixtures/invalid/{name}.nanachi",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+}
+
+fn syntax_invalid_fixture_source(name: &str) -> String {
+    let path = format!(
+        "{}/tests/fixtures/syntax_invalid/{name}.nanachi",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+}
+
 #[test]
 fn compile_valid_fixture() {
     let source = valid_fixture_source("nested_formatting");
     let grammar = compile(&source).unwrap();
     assert_eq!(grammar.items.len(), 11);
+}
+
+#[test]
+fn compile_valid_dirty_fixture() {
+    let source = valid_fixture_source("chaos_combo");
+    let grammar = compile(&source).unwrap();
+    assert_eq!(grammar.items.len(), 8);
 }
 
 #[test]
@@ -81,14 +104,14 @@ entry = { with seen += 1 { other_missing } }
         CompileError::Validation(errors) => {
             assert!(errors.len() >= 6);
             assert!(
-                errors
-                    .iter()
-                    .any(|e| matches!(e, ValidationError::DuplicateState { name } if name == "seen"))
+                errors.iter().any(
+                    |e| matches!(e, ValidationError::DuplicateState { name } if name == "seen")
+                )
             );
             assert!(
-                errors
-                    .iter()
-                    .any(|e| matches!(e, ValidationError::DuplicateRule { name } if name == "entry"))
+                errors.iter().any(
+                    |e| matches!(e, ValidationError::DuplicateRule { name } if name == "entry")
+                )
             );
             assert!(errors.iter().any(|e| matches!(
                 e,
@@ -100,5 +123,43 @@ entry = { with seen += 1 { other_missing } }
             )));
         }
         other => panic!("expected validation error, got {other:?}"),
+    }
+}
+
+#[test]
+fn compile_reports_validation_errors_from_fixture() {
+    let source = invalid_fixture_source("many_errors");
+    let err = compile(&source).unwrap_err();
+
+    match err {
+        CompileError::Validation(errors) => {
+            assert!(errors.iter().any(|e| matches!(
+                e,
+                ValidationError::DuplicateState { name } if name == "seen"
+            )));
+            assert!(errors.iter().any(|e| matches!(
+                e,
+                ValidationError::UndefinedState { name, .. } if name == "missing"
+            )));
+            assert!(errors.iter().any(|e| matches!(
+                e,
+                ValidationError::UndefinedRule { name, .. } if name == "missing_rule"
+            )));
+        }
+        other => panic!("expected validation error, got {other:?}"),
+    }
+}
+
+#[test]
+fn compile_reports_parse_errors_from_syntax_fixture() {
+    let source = syntax_invalid_fixture_source("unsupported_state_kind");
+    let err = compile(&source).unwrap_err();
+
+    match err {
+        CompileError::Parse(parse_err) => {
+            assert_eq!(parse_err.offset, 10);
+            assert!(parse_err.message.contains("expected 'flag' or 'counter'"));
+        }
+        other => panic!("expected parse error, got {other:?}"),
     }
 }
