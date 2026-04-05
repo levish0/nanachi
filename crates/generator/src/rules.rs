@@ -26,23 +26,23 @@ fn generate_rule(rule: &RuleDef) -> TokenStream {
     let guard_code = generate_statements(&rule.body.statements);
     let expr_code = generate_expr(&rule.body.expr);
 
-    // Rules with guards need a manual closure since guards do early returns.
     let has_statements = !rule.body.statements.is_empty();
 
+    // Each rule returns &'i str via .take() — the matched span of input.
     if has_statements {
         quote! {
-            fn #fn_name<'i>(input: &mut Input<'i, ParseState>) -> ModalResult<()> {
-                winnow::combinator::trace(#rule_name, |input: &mut Input<'_, ParseState>| {
+            fn #fn_name<'i>(input: &mut Input<'i, ParseState>) -> ModalResult<&'i str> {
+                winnow::combinator::trace(#rule_name, |input: &mut Input<'i, ParseState>| {
                     #guard_code
-                    (#expr_code).void().parse_next(input)
+                    (#expr_code).take().parse_next(input)
                 })
                 .parse_next(input)
             }
         }
     } else {
         quote! {
-            fn #fn_name<'i>(input: &mut Input<'i, ParseState>) -> ModalResult<()> {
-                winnow::combinator::trace(#rule_name, (#expr_code).void())
+            fn #fn_name<'i>(input: &mut Input<'i, ParseState>) -> ModalResult<&'i str> {
+                winnow::combinator::trace(#rule_name, (#expr_code).take())
                     .parse_next(input)
             }
         }

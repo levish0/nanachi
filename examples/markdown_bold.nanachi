@@ -2,7 +2,9 @@
 
 let flag inside_bold
 
-inline = { bold | ANY }
+text = { !("**") ANY }
+
+inline = { bold | text }
 
 bold = {
     guard !inside_bold

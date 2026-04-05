@@ -8,13 +8,22 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 /// Generate Rust + winnow parser code from a validated nanachi grammar.
+///
+/// Uses `__nanachi` as the module name. See [`generate_with_mod`] for custom module names.
 pub fn generate(grammar: &Grammar) -> TokenStream {
+    generate_with_mod(grammar, &format_ident!("__nanachi"))
+}
+
+/// Generate Rust + winnow parser code with a custom module name.
+pub fn generate_with_mod(grammar: &Grammar, mod_name: &proc_macro2::Ident) -> TokenStream {
     let state_code = state::generate_state(grammar);
     let rules_code = rules::generate_rules(grammar);
     let entry_code = generate_entry(grammar);
 
     quote::quote! {
-        pub mod __nanachi {
+        #[doc(hidden)]
+        #[allow(dead_code, unused_imports, unused_variables)]
+        mod #mod_name {
             use nanachi::winnow;
             use nanachi::winnow::prelude::*;
             use nanachi::winnow::combinator::*;
@@ -29,34 +38,37 @@ pub fn generate(grammar: &Grammar) -> TokenStream {
     }
 }
 
-/// Generate `pub fn parse(input: &str) -> Result<(), String>` using the first rule as entry point.
+/// Generate `pub fn parse_<rule>(source: &str) -> Result<&str, String>` for each rule.
 fn generate_entry(grammar: &Grammar) -> TokenStream {
-    let first_rule = grammar.items.iter().find_map(|item| match item {
-        Item::RuleDef(rule) => Some(&rule.name),
-        _ => None,
-    });
-
-    let Some(entry_name) = first_rule else {
-        return quote! {};
-    };
-
-    let entry_fn = format_ident!("{}", entry_name);
-
-    quote! {
-        pub fn parse(source: &str) -> Result<(), String> {
-            let state = ParseState::new(source);
-            let mut input = Input {
-                input: nanachi::LocatingSlice::new(source),
-                state,
-            };
-            #entry_fn.parse_next(&mut input).map_err(|e| format!("{e}"))?;
-            if !input.input.is_empty() {
-                return Err(format!(
-                    "unexpected trailing input at position {}",
-                    input.current_token_start()
-                ));
+    let entries: Vec<_> = grammar
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            Item::RuleDef(rule) => {
+                let parse_fn = format_ident!("parse_{}", rule.name);
+                let rule_fn = format_ident!("{}", rule.name);
+                Some(quote! {
+                    pub fn #parse_fn(source: &str) -> Result<&str, String> {
+                        let state = ParseState::new(source);
+                        let mut input = Input {
+                            input: nanachi::LocatingSlice::new(source),
+                            state,
+                        };
+                        let matched = #rule_fn.parse_next(&mut input)
+                            .map_err(|e| format!("{e}"))?;
+                        if !input.input.is_empty() {
+                            return Err(format!(
+                                "unexpected trailing input at position {}",
+                                input.current_token_start()
+                            ));
+                        }
+                        Ok(matched)
+                    }
+                })
             }
-            Ok(())
-        }
-    }
+            _ => None,
+        })
+        .collect();
+
+    quote! { #(#entries)* }
 }

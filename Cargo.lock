@@ -281,7 +281,12 @@ name = "nanachi_derive"
 version = "0.1.0"
 dependencies = [
  "nanachi",
+ "nanachi_derive",
  "nanachi_generator",
+ "nanachi_meta",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
