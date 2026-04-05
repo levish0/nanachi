@@ -1,4 +1,5 @@
 use nanachi_derive::Parser;
+use nanachi::ParseOptions;
 
 // ── #[grammar_inline] ──
 
@@ -14,6 +15,18 @@ fn inline_grammar_parses() {
 #[test]
 fn inline_grammar_rejects() {
     AlphaParser::parse_alpha("1").unwrap_err();
+}
+
+#[test]
+fn inline_grammar_detailed_errors_are_opt_in() {
+    let err = AlphaParser::parse_alpha("1").unwrap_err();
+    assert!(!err.contains("expected"));
+
+    let detailed = AlphaParser::parse_alpha_detailed("1").unwrap_err();
+    assert!(detailed.contains("expected"));
+
+    let with_options = AlphaParser::parse_alpha_with_options("1", ParseOptions::detailed()).unwrap_err();
+    assert!(with_options.contains("expected"));
 }
 
 // ── #[grammar] with file path ──

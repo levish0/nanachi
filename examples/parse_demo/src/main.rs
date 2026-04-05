@@ -33,6 +33,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::Demo;
+    use nanachi::ParseOptions;
 
     #[test]
     fn sample_lines_parse() {
@@ -57,6 +58,22 @@ mod tests {
 
         assert!(err.starts_with("parse error at 1:1:"));
         assert!(err.contains("invalid alpha"));
+        assert!(!err.contains("expected"));
+    }
+
+    #[test]
+    fn detailed_parse_error_includes_expected_context() {
+        let err = Demo::parse_assign_detailed("1x=2").unwrap_err();
+
+        assert!(err.starts_with("parse error at 1:1:"));
+        assert!(err.contains("expected"));
+    }
+
+    #[test]
+    fn parse_options_enable_detailed_errors() {
+        let err = Demo::parse_assign_with_options("1x=2", ParseOptions::detailed()).unwrap_err();
+
+        assert!(err.contains("expected"));
     }
 
     #[test]

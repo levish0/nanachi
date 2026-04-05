@@ -18,7 +18,7 @@ fn generate_module_inner(grammar: &Grammar) -> TokenStream {
         use nanachi::winnow::token::*;
         use nanachi::winnow::stream::Location;
         use nanachi::winnow::error::{StrContext, StrContextValue};
-        use nanachi::{Input, LineIndex, State};
+        use nanachi::{Input, LineIndex, ParseOptions, State};
         #state_code
         #rules_code
         #entry_code
@@ -56,10 +56,12 @@ fn generate_entry(grammar: &Grammar) -> TokenStream {
         .filter_map(|item| match item {
             Item::RuleDef(rule) => {
                 let parse_fn = format_ident!("parse_{}", rule.name);
-                let rule_fn = format_ident!("{}", rule.name);
+                let parse_fn_detailed = format_ident!("parse_{}_detailed", rule.name);
+                let parse_fn_with_options = format_ident!("parse_{}_with_options", rule.name);
+                let rule_fn = expr::rule_fn_ident(&rule.name, false);
+                let detailed_rule_fn = expr::rule_fn_ident(&rule.name, true);
                 Some(quote! {
                     pub fn #parse_fn(source: &str) -> Result<&str, String> {
-                        let line_index = LineIndex::new(source);
                         let state = ParseState::new(source);
                         let mut input = Input {
                             input: nanachi::LocatingSlice::new(source),
@@ -68,6 +70,7 @@ fn generate_entry(grammar: &Grammar) -> TokenStream {
                         let matched = #rule_fn.parse_next(&mut input)
                             .map_err(|e| {
                                 let offset = input.state.furthest_pos();
+                                let line_index = LineIndex::new(source);
                                 let (line, col) = line_index.line_col(offset);
                                 let inner = match e {
                                     winnow::error::ErrMode::Backtrack(c)
@@ -82,10 +85,63 @@ fn generate_entry(grammar: &Grammar) -> TokenStream {
                             })?;
                         if !input.input.is_empty() {
                             let offset = input.current_token_start();
+                            let line_index = LineIndex::new(source);
                             let (line, col) = line_index.line_col(offset);
                             return Err(format!(
                                 "unexpected trailing input at {line}:{col}"
                             ));
+                        }
+                        Ok(matched)
+                    }
+
+                    pub fn #parse_fn_detailed(source: &str) -> Result<&str, String> {
+                        let state = ParseState::new(source);
+                        let mut input = Input {
+                            input: nanachi::LocatingSlice::new(source),
+                            state,
+                        };
+                        let matched = #detailed_rule_fn.parse_next(&mut input)
+                            .map_err(|e| {
+                                let offset = input.state.furthest_pos();
+                                let line_index = LineIndex::new(source);
+                                let (line, col) = line_index.line_col(offset);
+                                let inner = match e {
+                                    winnow::error::ErrMode::Backtrack(c)
+                                    | winnow::error::ErrMode::Cut(c) => format!("{c}"),
+                                    _ => format!("{e}"),
+                                };
+                                if inner.is_empty() {
+                                    format!("parse error at {line}:{col}")
+                                } else {
+                                    format!("parse error at {line}:{col}: {inner}")
+                                }
+                            })?;
+                        if !input.input.is_empty() {
+                            let offset = input.current_token_start();
+                            let line_index = LineIndex::new(source);
+                            let (line, col) = line_index.line_col(offset);
+                            return Err(format!(
+                                "unexpected trailing input at {line}:{col}"
+                            ));
+                        }
+                        Ok(matched)
+                    }
+
+                    pub fn #parse_fn_with_options(source: &str, options: ParseOptions) -> Result<&str, String> {
+                        if options.detailed_errors() {
+                            #parse_fn_detailed(source)
+                        } else {
+                            #parse_fn(source)
+                        }
+                    }
+                })
+            }
+            _ => None,
+        })
+        .collect();
+
+    quote! { #(#entries)* }
+}
                         }
                         Ok(matched)
                     }

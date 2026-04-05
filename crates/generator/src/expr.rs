@@ -1,28 +1,49 @@
 use nanachi_meta::ast::*;
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 
+pub(crate) fn rule_fn_ident(name: &str, detailed: bool) -> Ident {
+    if detailed {
+        format_ident!("__nanachi_detailed_{}", name)
+    } else {
+        format_ident!("{}", name)
+    }
+}
+
 /// Generate winnow combinator code for an expression.
-pub(crate) fn generate_expr(expr: &Expr) -> TokenStream {
+pub(crate) fn generate_expr(expr: &Expr, detailed: bool) -> TokenStream {
     match expr {
         Expr::StringLit(s) => {
-            quote! { literal(#s).context(StrContext::Expected(StrContextValue::StringLiteral(#s))) }
+            if detailed {
+                quote! {
+                    literal(#s).context(StrContext::Expected(StrContextValue::StringLiteral(#s)))
+                }
+            } else {
+                quote! { literal(#s) }
+            }
         }
 
         Expr::CharRange(start, end) => {
             let desc = format!("'{}'..'{}'", start, end);
-            quote! { one_of(#start..=#end).context(StrContext::Expected(StrContextValue::Description(#desc))) }
+            if detailed {
+                quote! {
+                    one_of(#start..=#end)
+                        .context(StrContext::Expected(StrContextValue::Description(#desc)))
+                }
+            } else {
+                quote! { one_of(#start..=#end) }
+            }
         }
 
         Expr::Ident(name) => {
-            let fn_name = format_ident!("{}", name);
+            let fn_name = rule_fn_ident(name, detailed);
             quote! { #fn_name }
         }
 
         Expr::Builtin(builtin) => generate_builtin_expr(builtin),
 
         Expr::Seq(exprs) => {
-            let items: Vec<_> = exprs.iter().map(generate_expr).collect();
+            let items: Vec<_> = exprs.iter().map(|expr| generate_expr(expr, detailed)).collect();
             quote! { (#(#items),*) }
         }
 
@@ -30,31 +51,31 @@ pub(crate) fn generate_expr(expr: &Expr) -> TokenStream {
             let items: Vec<_> = exprs
                 .iter()
                 .map(|e| {
-                    let code = generate_expr(e);
+                    let code = generate_expr(e, detailed);
                     quote! { (#code).void() }
                 })
                 .collect();
             generate_alt(items)
         }
 
-        Expr::Repeat { expr, kind } => generate_repeat(expr, kind),
+        Expr::Repeat { expr, kind } => generate_repeat(expr, kind, detailed),
 
         Expr::PosLookahead(inner) => {
-            let inner_code = generate_expr(inner);
+            let inner_code = generate_expr(inner, detailed);
             quote! { peek(#inner_code) }
         }
 
         Expr::NegLookahead(inner) => {
-            let inner_code = generate_expr(inner);
+            let inner_code = generate_expr(inner, detailed);
             quote! { not(#inner_code) }
         }
 
-        Expr::Group(inner) => generate_expr(inner),
+        Expr::Group(inner) => generate_expr(inner, detailed),
 
-        Expr::With(with_expr) => generate_with_flag(with_expr),
-        Expr::WithIncrement(with_inc) => generate_with_increment(with_inc),
-        Expr::When(when_expr) => generate_when(when_expr),
-        Expr::DepthLimit(dl) => generate_depth_limit(dl),
+        Expr::With(with_expr) => generate_with_flag(with_expr, detailed),
+        Expr::WithIncrement(with_inc) => generate_with_increment(with_inc, detailed),
+        Expr::When(when_expr) => generate_when(when_expr, detailed),
+        Expr::DepthLimit(dl) => generate_depth_limit(dl, detailed),
     }
 }
 
@@ -111,8 +132,8 @@ fn generate_builtin_expr(builtin: &BuiltinPredicate) -> TokenStream {
     }
 }
 
-fn generate_repeat(expr: &Expr, kind: &RepeatKind) -> TokenStream {
-    let inner = generate_expr(expr);
+fn generate_repeat(expr: &Expr, kind: &RepeatKind, detailed: bool) -> TokenStream {
+    let inner = generate_expr(expr, detailed);
     // All repeats collect into () since we .void() at rule level.
     // Use fold to avoid Accumulate<()> ambiguity.
     let fold = quote! { .fold(|| (), |(), _| ()) };
@@ -140,9 +161,9 @@ fn generate_repeat(expr: &Expr, kind: &RepeatKind) -> TokenStream {
     }
 }
 
-fn generate_with_flag(with_expr: &WithExpr) -> TokenStream {
+fn generate_with_flag(with_expr: &WithExpr, detailed: bool) -> TokenStream {
     let name = &with_expr.flag;
-    let body = generate_expr(&with_expr.body);
+    let body = generate_expr(&with_expr.body, detailed);
     quote! {
         winnow::combinator::trace("with_flag", |input: &mut Input<'_, ParseState>| {
             let prev = input.state.get_flag(#name);
@@ -154,10 +175,10 @@ fn generate_with_flag(with_expr: &WithExpr) -> TokenStream {
     }
 }
 
-fn generate_with_increment(with_inc: &WithIncrementExpr) -> TokenStream {
+fn generate_with_increment(with_inc: &WithIncrementExpr, detailed: bool) -> TokenStream {
     let name = &with_inc.counter;
     let amount = with_inc.amount as usize;
-    let body = generate_expr(&with_inc.body);
+    let body = generate_expr(&with_inc.body, detailed);
     quote! {
         winnow::combinator::trace("with_increment", |input: &mut Input<'_, ParseState>| {
             input.state.increment_counter(#name, #amount);
@@ -168,9 +189,9 @@ fn generate_with_increment(with_inc: &WithIncrementExpr) -> TokenStream {
     }
 }
 
-fn generate_when(when_expr: &WhenExpr) -> TokenStream {
+fn generate_when(when_expr: &WhenExpr, detailed: bool) -> TokenStream {
     let condition_check = generate_condition_check(&when_expr.condition);
-    let body = generate_expr(&when_expr.body);
+    let body = generate_expr(&when_expr.body, detailed);
     quote! {
         winnow::combinator::trace("when", |input: &mut Input<'_, ParseState>| {
             if #condition_check {
@@ -212,9 +233,9 @@ fn generate_condition_check(condition: &GuardCondition) -> TokenStream {
     }
 }
 
-fn generate_depth_limit(dl: &DepthLimitExpr) -> TokenStream {
+fn generate_depth_limit(dl: &DepthLimitExpr, detailed: bool) -> TokenStream {
     let limit = dl.limit as usize;
-    let body = generate_expr(&dl.body);
+    let body = generate_expr(&dl.body, detailed);
     quote! {
         winnow::combinator::trace("depth_limit", |input: &mut Input<'_, ParseState>| {
             let depth = input.state.get_counter("__recursion_depth");

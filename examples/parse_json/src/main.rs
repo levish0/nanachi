@@ -34,6 +34,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::Json;
+    use nanachi::ParseOptions;
 
     #[test]
     fn sample_json_parses() {
@@ -61,6 +62,22 @@ mod tests {
         let err = Json::parse_json("{\n  \"a\": 1,\n}").unwrap_err();
 
         assert!(err.starts_with("parse error at 3:1:"));
+        assert!(!err.contains("expected"));
+    }
+
+    #[test]
+    fn detailed_json_parse_error_includes_expected_context() {
+        let err = Json::parse_json_detailed("{\n  \"a\": 1,\n}").unwrap_err();
+
+        assert!(err.starts_with("parse error at 3:1:"));
+        assert!(err.contains("expected"));
+    }
+
+    #[test]
+    fn parse_options_toggle_json_error_detail() {
+        let err = Json::parse_json_with_options("{\"a\":1,}", ParseOptions::detailed()).unwrap_err();
+
+        assert!(err.contains("expected"));
     }
 
     #[test]

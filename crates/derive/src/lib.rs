@@ -51,9 +51,22 @@ fn derive_parser_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStre
         .filter_map(|item| match item {
             nanachi_meta::ast::Item::RuleDef(rule) => {
                 let parse_fn = quote::format_ident!("parse_{}", rule.name);
+                let parse_fn_detailed = quote::format_ident!("parse_{}_detailed", rule.name);
+                let parse_fn_with_options = quote::format_ident!("parse_{}_with_options", rule.name);
                 Some(quote! {
                     pub fn #parse_fn(source: &str) -> Result<&str, String> {
                         #mod_name::#parse_fn(source)
+                    }
+
+                    pub fn #parse_fn_detailed(source: &str) -> Result<&str, String> {
+                        #mod_name::#parse_fn_detailed(source)
+                    }
+
+                    pub fn #parse_fn_with_options(
+                        source: &str,
+                        options: nanachi::ParseOptions,
+                    ) -> Result<&str, String> {
+                        #mod_name::#parse_fn_with_options(source, options)
                     }
                 })
             }
