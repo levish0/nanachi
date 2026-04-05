@@ -285,6 +285,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "nanachi_e2e_tests"
+version = "0.0.0"
+dependencies = [
+ "nanachi",
+ "nanachi_generator",
+ "nanachi_meta",
+ "prettyplease",
+ "syn",
+]
+
+[[package]]
 name = "nanachi_fuzz"
 version = "0.0.0"
 dependencies = [

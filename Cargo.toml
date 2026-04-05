@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/*", "xtask", "fuzz"]
+members = ["crates/*", "xtask", "fuzz", "tests/e2e"]
 resolver = "3"
 
 [workspace.package]
@@ -30,7 +30,7 @@ proc-macro2 = "1.0.106"
 quote = "1.0.45"
 syn = "2.0.117"
 prettyplease = "0.2.37"
-libfuzzer-sys = "0.4.10"
+libfuzzer-sys = "0.4.12"
 
 [profile.dev]
 opt-level = 1
