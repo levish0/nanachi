@@ -17,7 +17,10 @@ fn simple_alpha_rejects_digit() {
 
 #[test]
 fn simple_ident_multi_char() {
-    assert_eq!(simple::__nanachi::parse_ident("hello123").unwrap(), "hello123");
+    assert_eq!(
+        simple::__nanachi::parse_ident("hello123").unwrap(),
+        "hello123"
+    );
 }
 
 #[test]
@@ -58,7 +61,10 @@ fn bold_parses_bold_single_char() {
 
 #[test]
 fn bold_parses_bold_multi_char() {
-    assert_eq!(bold::__nanachi::parse_bold("**hello**").unwrap(), "**hello**");
+    assert_eq!(
+        bold::__nanachi::parse_bold("**hello**").unwrap(),
+        "**hello**"
+    );
 }
 
 #[test]
@@ -84,7 +90,10 @@ fn basic_rules_digit() {
 
 #[test]
 fn basic_rules_ident() {
-    assert_eq!(basic_rules::__nanachi::parse_ident("foo42").unwrap(), "foo42");
+    assert_eq!(
+        basic_rules::__nanachi::parse_ident("foo42").unwrap(),
+        "foo42"
+    );
 }
 
 #[test]

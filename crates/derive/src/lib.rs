@@ -102,9 +102,8 @@ fn extract_grammar_source(input: &DeriveInput) -> syn::Result<String> {
             let path = value.value();
 
             // Resolve relative to CARGO_MANIFEST_DIR
-            let base = std::env::var("CARGO_MANIFEST_DIR").map_err(|_| {
-                syn::Error::new_spanned(&value, "CARGO_MANIFEST_DIR not set")
-            })?;
+            let base = std::env::var("CARGO_MANIFEST_DIR")
+                .map_err(|_| syn::Error::new_spanned(&value, "CARGO_MANIFEST_DIR not set"))?;
             let full_path = std::path::Path::new(&base).join(&path);
 
             let source = std::fs::read_to_string(&full_path).map_err(|e| {

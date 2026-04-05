@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-04-06
+
+### Added
+
+- **Runtime crate** (`nanachi`): winnow-based parser runtime
+  - `State` trait with flag/counter accessors and line position helpers
+  - `Input` type alias wrapping `winnow::stream::Stateful<LocatingSlice<&str>, S>`
+
+- **Code generator** (`nanachi_generator`): produces Rust + winnow parser code from AST
+  - Per-rule entry points: `parse_<rule>(source) -> Result<&str, String>`
+  - Automatic `alt()` chunking for >21 branches (winnow tuple limit)
+  - Type unification via `.void()` on choice branches and `.fold()` on repeats
+  - Full stateful codegen: `with`/`when`/`guard`/`depth_limit` expressions
+  - `generate()` for build.rs (pub mod), `generate_with_mod()` for derive (hidden mod)
+
+- **Derive macro** (`nanachi_derive`): `#[derive(Parser)]` proc macro
+  - `#[grammar("path")]` to load from file
+  - `#[grammar_inline("...")]` for inline grammars
+  - Generates hidden module + `impl StructName` with `parse_<rule>()` methods
+
+- **Examples**
+  - `examples/parse_demo`: assignment parser, reads from file
+  - `examples/parse_json`: full JSON (RFC 8259) grammar and file parser
+
+- **Benchmarks** (`benches/json_bench`): criterion benchmarks comparing nanachi vs pest vs serde_json
+
+- **winnow `simd` feature** enabled for memchr-accelerated literal matching
+
+### Changed
+
+- Fixture files moved to workspace root `fixtures/` for shared access across crates
+- End-to-end tests (`tests/e2e`) use build.rs codegen with prettyplease formatting
+
 ## [0.1.0] - 2026-04-06
 
 Initial release of the nanachi meta-compiler pipeline (`nanachi_meta`).

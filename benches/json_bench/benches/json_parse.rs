@@ -1,6 +1,6 @@
 mod gen_data;
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 
 // ── nanachi ──
 use nanachi_derive::Parser;
@@ -35,9 +35,7 @@ fn bench_json(c: &mut Criterion) {
     });
 
     group.bench_function("serde_json", |b| {
-        b.iter(|| {
-            serde_json::from_str::<serde_json::Value>(criterion::black_box(&data)).unwrap()
-        })
+        b.iter(|| serde_json::from_str::<serde_json::Value>(criterion::black_box(&data)).unwrap())
     });
 
     group.finish();
