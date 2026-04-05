@@ -28,7 +28,11 @@ fn parse_sequence(tokens: &mut TokenStream<'_>) -> Result<Expr, ParseError> {
     let mut items = Vec::new();
     items.push(parse_postfix(tokens)?);
 
-    while is_at_expr_start(tokens) {
+    loop {
+        tokens.skip_newlines();
+        if !is_at_expr_start(tokens) {
+            break;
+        }
         items.push(parse_postfix(tokens)?);
     }
 
@@ -85,9 +89,7 @@ fn parse_postfix(tokens: &mut TokenStream<'_>) -> Result<Expr, ParseError> {
 
 /// Try to parse `{n}`, `{n,}`, `{,m}`, `{n,m}`.
 /// Returns None if the `{` is not a repeat bound.
-fn try_parse_repeat_bounds(
-    tokens: &mut TokenStream<'_>,
-) -> Result<Option<RepeatKind>, ParseError> {
+fn try_parse_repeat_bounds(tokens: &mut TokenStream<'_>) -> Result<Option<RepeatKind>, ParseError> {
     let saved = tokens.save();
 
     tokens.advance(); // consume `{`

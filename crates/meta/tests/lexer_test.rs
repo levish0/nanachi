@@ -154,7 +154,7 @@ fn lex_depth_limit() {
 }
 
 #[test]
-fn lex_comment_skipped() {
+fn lex_line_comment_skipped() {
     let tokens = lex("let flag x // this is a comment\nlet flag y");
     assert_eq!(
         tokens,
@@ -162,6 +162,30 @@ fn lex_comment_skipped() {
             Token::Let,
             Token::Flag,
             Token::Ident("x"),
+            Token::Newline,
+            Token::Let,
+            Token::Flag,
+            Token::Ident("y"),
+        ]
+    );
+}
+
+#[test]
+fn lex_block_comment_skipped() {
+    let tokens = lex("let /* skip this */ flag x");
+    assert_eq!(tokens, vec![Token::Let, Token::Flag, Token::Ident("x")]);
+}
+
+#[test]
+fn lex_multiline_block_comment() {
+    let tokens = lex("let flag x\n/* this\nspans\nlines */\nlet flag y");
+    assert_eq!(
+        tokens,
+        vec![
+            Token::Let,
+            Token::Flag,
+            Token::Ident("x"),
+            Token::Newline,
             Token::Newline,
             Token::Let,
             Token::Flag,

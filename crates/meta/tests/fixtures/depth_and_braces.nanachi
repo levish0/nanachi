@@ -1,0 +1,22 @@
+// Depth limiting and brace block nesting
+
+let counter brace_depth
+
+document = {
+    depth_limit(64) {
+        block+
+    }
+}
+
+block = { raw_block | paragraph }
+
+raw_block = {
+    "{{{" with brace_depth += 1 { raw_content* } "}}}"
+}
+
+raw_content = {
+    raw_block
+    | !("}}}" ) ANY
+}
+
+paragraph = { (!("{{{") ANY)+ }

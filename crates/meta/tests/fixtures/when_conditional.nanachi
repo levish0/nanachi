@@ -1,0 +1,12 @@
+// Conditional expressions with when
+
+let flag inside_header
+let counter trim_brace_depth
+
+newline = {
+    guard !inside_header
+    when trim_brace_depth > 0 {
+        !(ANY+ &"}}}")
+    }
+    "\n"
+}

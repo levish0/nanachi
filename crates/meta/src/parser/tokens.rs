@@ -39,12 +39,6 @@ impl<'src> TokenStream<'src> {
         }
     }
 
-    pub fn skip_newlines(&mut self) {
-        while self.peek() == Some(&Token::Newline) {
-            self.advance();
-        }
-    }
-
     pub fn expect(&mut self, expected: &Token<'_>) -> Result<(), ParseError> {
         match self.peek() {
             Some(tok) if tok == expected => {

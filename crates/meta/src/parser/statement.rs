@@ -1,14 +1,10 @@
-use crate::ast::{
-    BuiltinPredicate, CompareOp, EmitStmt, GuardCondition, GuardStmt, Statement,
-};
+use crate::ast::{BuiltinPredicate, CompareOp, EmitStmt, GuardCondition, GuardStmt, Statement};
 use crate::lexer::Token;
 
 use super::error::ParseError;
 use super::tokens::TokenStream;
 
-pub(crate) fn parse_statements(
-    tokens: &mut TokenStream<'_>,
-) -> Result<Vec<Statement>, ParseError> {
+pub(crate) fn parse_statements(tokens: &mut TokenStream<'_>) -> Result<Vec<Statement>, ParseError> {
     let mut statements = Vec::new();
 
     loop {

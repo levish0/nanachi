@@ -21,10 +21,7 @@ pub enum Expr {
     Choice(Vec<Expr>),
 
     /// Repetition: `p+`, `p*`, `p?`, `p{n,m}`
-    Repeat {
-        expr: Box<Expr>,
-        kind: RepeatKind,
-    },
+    Repeat { expr: Box<Expr>, kind: RepeatKind },
 
     /// Positive lookahead: `&p`
     PosLookahead(Box<Expr>),

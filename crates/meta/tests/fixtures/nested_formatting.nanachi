@@ -1,0 +1,41 @@
+// Multiple formatting types with nesting prevention
+
+let flag inside_bold
+let flag inside_italic
+let flag inside_strikethrough
+let flag inside_header
+let counter section_counter
+
+inline = { bold | italic | strikethrough | text }
+
+bold = {
+    guard !inside_bold
+    with inside_bold {
+        "**" inline+ "**"
+    }
+}
+
+italic = {
+    guard !inside_italic
+    with inside_italic {
+        "*" inline+ "*"
+    }
+}
+
+strikethrough = {
+    guard !inside_strikethrough
+    with inside_strikethrough {
+        "~~" inline+ "~~"
+    }
+}
+
+header = {
+    guard LINE_START
+    guard !inside_header
+    emit section_counter
+    with inside_header {
+        "#"{1,6} " " inline+
+    }
+}
+
+text = { !("*" | "~" | "#") ANY }

@@ -1,8 +1,9 @@
 use logos::Logos;
 
 #[derive(Logos, Debug, Clone, PartialEq)]
-#[logos(skip r"[ \t\r]+")]
+#[logos(skip r"[ \t\r\n]+")]
 #[logos(skip(r"//[^\n]*", allow_greedy = true))]
+#[logos(skip(r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/", allow_greedy = true))]
 pub enum Token<'src> {
     // ── Keywords ──
     #[token("let")]
@@ -99,8 +100,4 @@ pub enum Token<'src> {
     Comma,
     #[token(":")]
     Colon,
-
-    // ── Newline (significant for statement separation) ──
-    #[token("\n")]
-    Newline,
 }

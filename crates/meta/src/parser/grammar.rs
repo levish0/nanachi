@@ -9,12 +9,10 @@ use super::tokens::TokenStream;
 
 pub(crate) fn parse_grammar(tokens: &mut TokenStream<'_>) -> Result<Grammar, ParseError> {
     let mut items = Vec::new();
-    tokens.skip_newlines();
 
     while !tokens.at_end() {
         let item = parse_item(tokens)?;
         items.push(item);
-        tokens.skip_newlines();
     }
 
     Ok(Grammar { items })
@@ -32,13 +30,10 @@ fn parse_rule_def(tokens: &mut TokenStream<'_>) -> Result<RuleDef, ParseError> {
     let name = tokens.expect_ident()?;
     tokens.expect(&Token::Eq)?;
     tokens.expect(&Token::LBrace)?;
-    tokens.skip_newlines();
 
     let statements = parse_statements(tokens)?;
-    tokens.skip_newlines();
     let expr = parse_choice(tokens)?;
 
-    tokens.skip_newlines();
     tokens.expect(&Token::RBrace)?;
 
     Ok(RuleDef {
