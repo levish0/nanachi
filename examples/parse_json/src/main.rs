@@ -75,7 +75,8 @@ mod tests {
 
     #[test]
     fn parse_options_toggle_json_error_detail() {
-        let err = Json::parse_json_with_options("{\"a\":1,}", ParseOptions::detailed()).unwrap_err();
+        let err =
+            Json::parse_json_with_options("{\"a\":1,}", ParseOptions::detailed()).unwrap_err();
 
         assert!(err.contains("expected"));
     }

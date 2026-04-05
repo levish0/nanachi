@@ -44,7 +44,15 @@ mod tests {
     #[test]
     fn detailed_builder_enables_flag() {
         assert!(ParseOptions::detailed().detailed_errors());
-        assert!(ParseOptions::new().with_detailed_errors(true).detailed_errors());
-        assert!(!ParseOptions::detailed().with_detailed_errors(false).detailed_errors());
+        assert!(
+            ParseOptions::new()
+                .with_detailed_errors(true)
+                .detailed_errors()
+        );
+        assert!(
+            !ParseOptions::detailed()
+                .with_detailed_errors(false)
+                .detailed_errors()
+        );
     }
 }

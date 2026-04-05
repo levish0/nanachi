@@ -43,7 +43,10 @@ pub(crate) fn generate_expr(expr: &Expr, detailed: bool) -> TokenStream {
         Expr::Builtin(builtin) => generate_builtin_expr(builtin),
 
         Expr::Seq(exprs) => {
-            let items: Vec<_> = exprs.iter().map(|expr| generate_expr(expr, detailed)).collect();
+            let items: Vec<_> = exprs
+                .iter()
+                .map(|expr| generate_expr(expr, detailed))
+                .collect();
             quote! { (#(#items),*) }
         }
 
