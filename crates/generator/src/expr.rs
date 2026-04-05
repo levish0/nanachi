@@ -26,7 +26,13 @@ pub(crate) fn generate_expr(expr: &Expr) -> TokenStream {
         }
 
         Expr::Choice(exprs) => {
-            let items: Vec<_> = exprs.iter().map(generate_expr).collect();
+            let items: Vec<_> = exprs
+                .iter()
+                .map(|e| {
+                    let code = generate_expr(e);
+                    quote! { (#code).void() }
+                })
+                .collect();
             quote! { alt((#(#items),*)) }
         }
 

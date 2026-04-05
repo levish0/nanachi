@@ -14,7 +14,7 @@ pub fn generate(grammar: &Grammar) -> TokenStream {
     let entry_code = generate_entry(grammar);
 
     quote::quote! {
-        mod __nanachi {
+        pub mod __nanachi {
             use nanachi::winnow;
             use nanachi::winnow::prelude::*;
             use nanachi::winnow::combinator::*;

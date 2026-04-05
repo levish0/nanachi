@@ -50,7 +50,7 @@ pub(crate) fn generate_state(grammar: &Grammar) -> TokenStream {
         .iter()
         .map(|name| {
             let ident = format_ident!("{}", name);
-            quote! { #name => self.#ident = value }
+            quote! { #name => self.#ident = _value }
         })
         .collect();
 
@@ -66,7 +66,7 @@ pub(crate) fn generate_state(grammar: &Grammar) -> TokenStream {
         .iter()
         .map(|name| {
             let ident = format_ident!("{}", name);
-            quote! { #name => self.#ident = value }
+            quote! { #name => self.#ident = _value }
         })
         .collect();
 
@@ -99,7 +99,7 @@ pub(crate) fn generate_state(grammar: &Grammar) -> TokenStream {
                 }
             }
 
-            fn set_flag(&mut self, name: &str, value: bool) {
+            fn set_flag(&mut self, name: &str, _value: bool) {
                 match name {
                     #(#set_flag_arms,)*
                     _ => {}
@@ -113,7 +113,7 @@ pub(crate) fn generate_state(grammar: &Grammar) -> TokenStream {
                 }
             }
 
-            fn set_counter(&mut self, name: &str, value: usize) {
+            fn set_counter(&mut self, name: &str, _value: usize) {
                 match name {
                     #(#set_counter_arms,)*
                     _ => {}
