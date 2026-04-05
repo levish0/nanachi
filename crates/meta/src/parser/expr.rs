@@ -12,7 +12,7 @@ pub(crate) fn parse_choice(tokens: &mut TokenStream<'_>) -> Result<Expr, ParseEr
 
     while tokens.peek() == Some(&Token::Pipe) {
         tokens.advance();
-        tokens.skip_newlines();
+
         alternatives.push(parse_sequence(tokens)?);
     }
 
@@ -29,7 +29,7 @@ fn parse_sequence(tokens: &mut TokenStream<'_>) -> Result<Expr, ParseError> {
     items.push(parse_postfix(tokens)?);
 
     loop {
-        tokens.skip_newlines();
+
         if !is_at_expr_start(tokens) {
             break;
         }
@@ -207,9 +207,9 @@ fn parse_atom(tokens: &mut TokenStream<'_>) -> Result<Expr, ParseError> {
         }
         Some(Token::LParen) => {
             tokens.advance();
-            tokens.skip_newlines();
+    
             let inner = parse_choice(tokens)?;
-            tokens.skip_newlines();
+    
             tokens.expect(&Token::RParen)?;
             Ok(Expr::Group(Box::new(inner)))
         }
@@ -229,9 +229,9 @@ fn parse_with_expr(tokens: &mut TokenStream<'_>) -> Result<Expr, ParseError> {
             tokens.advance();
             let amount = tokens.expect_number()?;
             tokens.expect(&Token::LBrace)?;
-            tokens.skip_newlines();
+    
             let body = parse_choice(tokens)?;
-            tokens.skip_newlines();
+    
             tokens.expect(&Token::RBrace)?;
             Ok(Expr::WithIncrement(WithIncrementExpr {
                 counter: name,
@@ -241,9 +241,9 @@ fn parse_with_expr(tokens: &mut TokenStream<'_>) -> Result<Expr, ParseError> {
         }
         Some(Token::LBrace) => {
             tokens.advance();
-            tokens.skip_newlines();
+    
             let body = parse_choice(tokens)?;
-            tokens.skip_newlines();
+    
             tokens.expect(&Token::RBrace)?;
             Ok(Expr::With(WithExpr {
                 flag: name,

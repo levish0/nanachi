@@ -8,7 +8,6 @@ pub(crate) fn parse_statements(tokens: &mut TokenStream<'_>) -> Result<Vec<State
     let mut statements = Vec::new();
 
     loop {
-        tokens.skip_newlines();
         match tokens.peek() {
             Some(Token::Guard) => {
                 statements.push(Statement::Guard(parse_guard(tokens)?));
