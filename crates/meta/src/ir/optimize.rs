@@ -45,7 +45,11 @@ pub fn optimize(program: IrProgram) -> IrProgram {
 
 fn single_char_to_charset(mut program: IrProgram) -> IrProgram {
     for rule in &mut program.rules {
+        let before = rule.expr.clone();
         rule.expr = single_char_to_charset_expr(rule.expr.clone());
+        if rule.expr != before {
+            tracing::trace!(rule = %rule.name, "single_char_to_charset: transformed");
+        }
     }
     program
 }
@@ -116,7 +120,11 @@ fn single_char_to_charset_expr(expr: IrExpr) -> IrExpr {
 
 fn flatten(mut program: IrProgram) -> IrProgram {
     for rule in &mut program.rules {
+        let before = rule.expr.clone();
         rule.expr = flatten_expr(rule.expr.clone());
+        if rule.expr != before {
+            tracing::trace!(rule = %rule.name, "flatten: transformed");
+        }
     }
     program
 }
@@ -193,7 +201,11 @@ fn flatten_expr(expr: IrExpr) -> IrExpr {
 
 fn merge_charsets(mut program: IrProgram) -> IrProgram {
     for rule in &mut program.rules {
+        let before = rule.expr.clone();
         rule.expr = merge_charsets_expr(rule.expr.clone());
+        if rule.expr != before {
+            tracing::trace!(rule = %rule.name, "merge_charsets: transformed");
+        }
     }
     program
 }
@@ -296,7 +308,11 @@ fn coalesce_ranges(mut ranges: Vec<CharRange>) -> Vec<CharRange> {
 
 fn fuse_literals(mut program: IrProgram) -> IrProgram {
     for rule in &mut program.rules {
+        let before = rule.expr.clone();
         rule.expr = fuse_literals_expr(rule.expr.clone());
+        if rule.expr != before {
+            tracing::trace!(rule = %rule.name, "fuse_literals: transformed");
+        }
     }
     program
 }
@@ -386,6 +402,7 @@ fn inline_trivial_rules(mut program: IrProgram) -> IrProgram {
     for (i, rule) in program.rules.iter_mut().enumerate() {
         if inline_set.contains(&i) {
             rule.inline = true;
+            tracing::trace!(rule = %rule.name, "inline_trivial_rules: marked for inlining");
         }
     }
 
@@ -521,7 +538,11 @@ fn collect_refs(expr: &IrExpr, refs: &mut HashSet<usize>) {
 
 fn recognize_take_while(mut program: IrProgram) -> IrProgram {
     for rule in &mut program.rules {
+        let before = rule.expr.clone();
         rule.expr = recognize_take_while_expr(rule.expr.clone());
+        if rule.expr != before {
+            tracing::trace!(rule = %rule.name, "recognize_take_while: fused pattern");
+        }
     }
     program
 }

@@ -21,6 +21,14 @@ fn generate_rule(rule: &IrRule, ir: &IrProgram) -> TokenStream {
     let label = rule.error_label.as_deref().unwrap_or(&rule.name);
     let is_entry_point = rule.ref_count == 0;
 
+    tracing::trace!(
+        rule = %rule.name,
+        entry_point = is_entry_point,
+        label = %label,
+        inline = rule.inline,
+        "generating rule"
+    );
+
     let guard_code = generate_statements(&rule.guards, &rule.emits);
     let expr_code = generate_expr(&rule.expr, ir);
 

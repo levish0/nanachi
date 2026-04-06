@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-04-06
+
+### Added
+
+- **`@` error label syntax** — opt-in custom error messages at two levels
+  - Rule-level: `value = @ "json value" { ... }` — sets the Label context for the entire rule (error shows "invalid json value" instead of "invalid value")
+  - Expression-level: `number @ "a number" | ident @ "an identifier"` — attaches Expected context to individual expressions or choice branches
+  - `@` binds tighter than `|` but after postfix operators (`+`, `*`, `?`, `{n,m}`), so `digit+ @ "digits" | alpha` works as expected
+  - Full pipeline support: lexer (`At` token) → parser → AST (`Expr::Labeled`, `RuleDef.error_label`) → validator → IR (`IrExpr::Labeled`, `IrRule.error_label`) → optimizer (all 8+ passes) → generator
+
+- **Tracing instrumentation** across the compilation pipeline
+  - `compile()`, `parse()`, `validate()`, `lower()`, `optimize()`, and `generate_module_inner()` are instrumented with `#[tracing::instrument]`
+  - Optimizer logs each phase with structured fields (rule count, inlined count, entry points)
+  - Set `RUST_LOG=debug` on any example binary to see the full pipeline trace on stderr
+
+- **`error_labels` example** (`examples/error_labels`)
+  - Demonstrates both rule-level and expression-level `@` labels
+  - Shows how custom error messages appear for different failure modes
+
+- **`tracing-subscriber`** added to all example binaries (`parse_json`, `parse_demo`, `error_labels`)
+  - Initialized with `EnvFilter` writing to stderr, so parser output stays on stdout
+
+### Changed
+
+- **Choice branches no longer emit automatic `.context(Expected(...))`**
+  - Previously every choice branch got a heuristic description via `describe_expr()` — this added `.context()` calls on hot paths with often-unhelpful messages
+  - Now only explicit `@ "label"` annotations add Expected context
+  - Rule-level `Label` context is always present (using `error_label` if set, else rule name)
+  - Deleted `describe_expr()` and `describe_ranges()` helper functions from generator
+
+- **Default error strategy is now lean**: rule Label + opt-in Expected via `@`
+  - This addresses the 7x `.context()` overhead identified in 0.1.2 profiling while preserving user-facing error quality where authors choose to add it
+
+### Fixed
+
+- **Error position accuracy in sequences** — `track_pos()` is now interleaved between sequence elements in generated code
+  - Previously `track_pos()` was only called at rule entry, so errors within a sequence (e.g., `ident "=" value` failing at `"="`) reported the rule start position instead of the actual failure point
+  - `x+42` against `assign = { ident "=" value }` now correctly reports `1:2` (at `+`) instead of `1:1`
+  - Large sequences (>11 elements after interleaving) fall back to explicit sequential parsing to stay within winnow's 21-element tuple limit
+
+### Internal
+
+- Test fixtures updated: `@` was previously used as an "unexpected character" in test cases; replaced with `$` since `@` is now valid syntax
+- `tracing` dependency added to `nanachi_meta` and `nanachi_generator`
+- `tracing-subscriber` added to workspace dependencies
+
 ## [0.1.3] - 2026-04-06
 
 ### Added

@@ -48,6 +48,13 @@ fn parse_rule_def(tokens: &mut TokenStream<'_>) -> Result<RuleDef, ParseError> {
 
     tokens.expect(&Token::RBrace)?;
 
+    tracing::trace!(
+        rule = %name,
+        statements = statements.len(),
+        has_error_label = error_label.is_some(),
+        "parsed rule"
+    );
+
     Ok(RuleDef {
         name,
         error_label,

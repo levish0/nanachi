@@ -39,7 +39,17 @@ pub fn lower(grammar: &Grammar) -> IrProgram {
         .items
         .iter()
         .filter_map(|item| match item {
-            Item::RuleDef(rule) => Some(lower_rule(rule, &rule_indices)),
+            Item::RuleDef(rule) => {
+                let ir_rule = lower_rule(rule, &rule_indices);
+                tracing::trace!(
+                    rule = %ir_rule.name,
+                    guards = ir_rule.guards.len(),
+                    emits = ir_rule.emits.len(),
+                    has_error_label = ir_rule.error_label.is_some(),
+                    "lowered rule"
+                );
+                Some(ir_rule)
+            }
             _ => None,
         })
         .collect();

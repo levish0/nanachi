@@ -44,6 +44,8 @@ pub(crate) fn collect_definitions(
         }
     }
 
+    tracing::trace!(rules = rules.len(), states = states.len(), "collected definitions");
+
     DefinitionContext { rules, states }
 }
 
