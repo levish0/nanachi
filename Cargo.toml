@@ -3,7 +3,7 @@ members = ["crates/*", "xtask", "fuzz", "tests/e2e", "examples/parse_demo", "exa
 resolver = "3"
 
 [workspace.package]
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Levi Laine <shiueo.csh@gmail.com>"]
 license = "Apache-2.0"
 repository = "https://github.com/levish0/faputa"
@@ -16,12 +16,12 @@ readme = "README.md"
 
 [workspace.dependencies]
 # Internal crates
-faputa = { path = "crates/faputa", version = "0.1.5" }
-faputa_meta = { path = "crates/meta", version = "0.1.5" }
-faputa_generator = { path = "crates/generator", version = "0.1.5" }
-faputa_derive = { path = "crates/derive", version = "0.1.5" }
-faputa_vm = { path = "crates/vm", version = "0.1.5" }
-faputa_debugger = { path = "crates/debugger", version = "0.1.5" }
+faputa = { path = "crates/faputa", version = "0.1.6" }
+faputa_meta = { path = "crates/meta", version = "0.1.6" }
+faputa_generator = { path = "crates/generator", version = "0.1.6" }
+faputa_derive = { path = "crates/derive", version = "0.1.6" }
+faputa_vm = { path = "crates/vm", version = "0.1.6" }
+faputa_debugger = { path = "crates/debugger", version = "0.1.6" }
 
 # External dependencies
 winnow = { version = "1.0.1", features = ["simd"] }

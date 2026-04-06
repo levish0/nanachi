@@ -339,7 +339,7 @@ dependencies = [
 
 [[package]]
 name = "faputa"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "memchr",
  "winnow",
@@ -347,7 +347,7 @@ dependencies = [
 
 [[package]]
 name = "faputa_debugger"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "faputa",
  "faputa_meta",
@@ -356,7 +356,7 @@ dependencies = [
 
 [[package]]
 name = "faputa_derive"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "faputa",
  "faputa_derive",
@@ -389,7 +389,7 @@ dependencies = [
 
 [[package]]
 name = "faputa_generator"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "faputa",
  "faputa_meta",
@@ -403,7 +403,7 @@ dependencies = [
 
 [[package]]
 name = "faputa_meta"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "faputa",
  "logos",
@@ -413,7 +413,7 @@ dependencies = [
 
 [[package]]
 name = "faputa_vm"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "faputa",
  "faputa_meta",
