@@ -1,6 +1,6 @@
-# nanachi
+# faputa
 
-A stateful parser generator that compiles `.nanachi` grammar files into fast
+A stateful parser generator that compiles `.faputa` grammar files into fast
 [winnow](https://docs.rs/winnow)-based Rust parsers.
 
 ## Features
@@ -25,13 +25,13 @@ Add the dependencies:
 
 ```toml
 [dependencies]
-nanachi = "0.1"
-nanachi_derive = "0.1"
+faputa = "0.1"
+faputa_derive = "0.1"
 ```
 
-Write a grammar file (`grammar.nanachi`):
+Write a grammar file (`grammar.faputa`):
 
-```nanachi
+```faputa
 alpha  = { 'a'..'z' | 'A'..'Z' | "_" }
 digit  = { '0'..'9' }
 ident  = { alpha (alpha | digit)* }
@@ -42,10 +42,10 @@ assign = { ident "=" (number | ident) }
 Derive the parser:
 
 ```rust
-use nanachi_derive::Parser;
+use faputa_derive::Parser;
 
 #[derive(Parser)]
-#[grammar("grammar.nanachi")]
+#[grammar("grammar.faputa")]
 struct MyParser;
 
 fn main() {
@@ -60,7 +60,7 @@ Each rule generates a `parse_<name>(&str) -> Result<&str, String>` method.
 
 ## Grammar Syntax
 
-```nanachi
+```faputa
 // Rules
 rule_name = { body }
 
@@ -109,7 +109,7 @@ parse error at 1:2: invalid assign
 
 With `@` labels you control the message:
 
-```nanachi
+```faputa
 ident  = @ "identifier" { alpha (alpha | digit)* }
 number = @ "number" { digit+ }
 
@@ -136,13 +136,13 @@ expected equals sign
 
 ## Crate Structure
 
-| Crate               | Purpose                                                       |
-|---------------------|---------------------------------------------------------------|
-| `nanachi`           | Runtime (re-exports winnow types, `LineIndex`, `State` trait) |
-| `nanachi_meta`      | Lexer → Parser → Validator → IR lowering → Optimizer          |
-| `nanachi_generator` | IR → Rust/winnow codegen                                      |
-| `nanachi_derive`    | `#[derive(Parser)]` proc macro                                |
-| `nanachi_vm`        | Bytecode VM interpreter (WIP)                                 |
+| Crate              | Purpose                                                       |
+|--------------------|---------------------------------------------------------------|
+| `faputa`           | Runtime (re-exports winnow types, `LineIndex`, `State` trait) |
+| `faputa_meta`      | Lexer → Parser → Validator → IR lowering → Optimizer          |
+| `faputa_generator` | IR → Rust/winnow codegen                                      |
+| `faputa_derive`    | `#[derive(Parser)]` proc macro                                |
+| `faputa_vm`        | Bytecode VM interpreter (WIP)                                 |
 
 ## Feature Flags
 
@@ -151,7 +151,7 @@ expected equals sign
 | `debug` | Enables winnow's `trace()` combinator — prints parse tree to stderr at runtime |
 
 ```toml
-nanachi = { version = "0.1", features = ["debug"] }
+faputa = { version = "0.1", features = ["debug"] }
 ```
 
 ## Tracing

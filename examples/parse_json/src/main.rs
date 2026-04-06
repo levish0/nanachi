@@ -8,11 +8,6 @@ use std::process;
 struct Json;
 
 fn main() {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing_subscriber::filter::LevelFilter::TRACE)
-        .with_writer(std::io::stderr)
-        .init();
-
     let path = env::args().nth(1).unwrap_or_else(|| {
         let manifest = env!("CARGO_MANIFEST_DIR");
         format!("{manifest}/sample.json")
