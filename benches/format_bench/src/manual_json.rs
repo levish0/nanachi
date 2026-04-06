@@ -130,7 +130,18 @@ fn json(input: &mut &str) -> ModalResult<()> {
     (ws, value, ws, eof).void().parse_next(input)
 }
 
-pub fn parse_json(source: &str) -> Result<(), String> {
+pub fn parse(source: &str) -> Result<(), String> {
     let mut input = source;
     json.parse_next(&mut input).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse;
+
+    #[test]
+    fn parses_sample() {
+        let input = r#"[{"id":1,"name":"x","active":true,"score":1.5,"tags":["a"],"meta":{"created":"2025-01-01","version":null}}]"#;
+        parse(input).expect("json parser should accept benchmark-shaped payload");
+    }
 }

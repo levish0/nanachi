@@ -4,7 +4,8 @@ mod state;
 mod statement;
 
 use faputa_meta::ast::Grammar;
-use faputa_meta::ir::{self, IrProgram};
+use faputa_meta::ir;
+use faputa_meta::mir::{self, MirProgram};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -12,11 +13,13 @@ use quote::{format_ident, quote};
 fn generate_module_inner(grammar: &Grammar) -> TokenStream {
     let ir = ir::lower(grammar);
     let ir = ir::optimize(ir);
+    let mir = mir::lower(&ir);
+    let mir = mir::optimize(mir);
 
-    let state_code = state::generate_state(&ir);
-    let rules_code = rules::generate_rules(&ir);
-    let entry_code = generate_entry(&ir);
-    tracing::debug!(rules = ir.rules.len(), "code generation complete");
+    let state_code = state::generate_state(&mir);
+    let rules_code = rules::generate_rules(&mir);
+    let entry_code = generate_entry(&mir);
+    tracing::debug!(rules = mir.rules.len(), "code generation complete");
     quote::quote! {
         use faputa::winnow;
         use faputa::winnow::prelude::*;
@@ -56,7 +59,7 @@ pub fn generate_with_mod(grammar: &Grammar, mod_name: &proc_macro2::Ident) -> To
 }
 
 /// Generate `pub fn parse_<rule>(source: &str) -> Result<&str, String>` for each rule.
-fn generate_entry(ir: &IrProgram) -> TokenStream {
+fn generate_entry(ir: &MirProgram) -> TokenStream {
     let entries: Vec<_> = ir
         .rules
         .iter()

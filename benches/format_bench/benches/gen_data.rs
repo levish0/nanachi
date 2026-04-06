@@ -54,9 +54,7 @@ pub fn generate_ini() -> String {
         out.push_str(&format!("[section_{section}]\n"));
 
         for key in 0..8 {
-            out.push_str(&format!(
-                "key_{key}=path/section_{section}/value_{key}\n"
-            ));
+            out.push_str(&format!("key_{key}=path/section_{section}/value_{key}\n"));
         }
 
         out.push('\n');

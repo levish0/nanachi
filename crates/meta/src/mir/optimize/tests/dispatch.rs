@@ -1,17 +1,17 @@
-use crate::ir::IrExpr;
+use crate::mir::MirExpr;
 
 use super::optimized;
 
 #[test]
 fn dispatch_recognized_for_disjoint_choice() {
     let ir = optimized(r#"value = { "true" | "false" | "null" }"#);
-    assert!(matches!(&ir.rules[0].expr, IrExpr::Dispatch(_)));
+    assert!(matches!(&ir.rules[0].expr, MirExpr::Dispatch(_)));
 }
 
 #[test]
 fn dispatch_skips_overlapping_choice() {
     let ir = optimized(r#"value = { "true" | "trick" }"#);
-    assert!(matches!(&ir.rules[0].expr, IrExpr::Choice(_)));
+    assert!(matches!(&ir.rules[0].expr, MirExpr::Choice(_)));
 }
 
 #[test]
@@ -24,7 +24,7 @@ fn dispatch_works_through_rule_refs() {
     "#,
     );
     let value = ir.rules.iter().find(|r| r.name == "value").unwrap();
-    assert!(matches!(&value.expr, IrExpr::Dispatch(_)));
+    assert!(matches!(&value.expr, MirExpr::Dispatch(_)));
 }
 
 #[test]
@@ -38,5 +38,5 @@ fn dispatch_recognizes_neg_lookahead_any_plain_branch() {
     "#,
     );
     let string_char = ir.rules.iter().find(|r| r.name == "string_char").unwrap();
-    assert!(matches!(&string_char.expr, IrExpr::Dispatch(_)));
+    assert!(matches!(&string_char.expr, MirExpr::Dispatch(_)));
 }

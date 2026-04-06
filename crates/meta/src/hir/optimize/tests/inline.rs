@@ -14,13 +14,13 @@ fn trivial_rule_inlined() {
     assert!(
         matches!(
             &number.expr,
-            IrExpr::TakeWhile {
+            IrExpr::Repeat {
+                expr,
                 min: 1,
                 max: None,
-                ..
-            }
+            } if matches!(&**expr, IrExpr::CharSet(_))
         ),
-        "expected TakeWhile, got {:?}",
+        "expected Repeat(CharSet), got {:?}",
         &number.expr
     );
 }
@@ -54,8 +54,11 @@ fn non_trivial_rule_not_inlined() {
         IrExpr::Seq(items) => {
             assert!(matches!(&items[0], IrExpr::CharSet(_)));
             assert!(
-                matches!(&items[1], IrExpr::TakeWhile { .. }),
-                "expected TakeWhile, got {:?}",
+                matches!(
+                    &items[1],
+                    IrExpr::Repeat { expr, min: 0, max: None } if matches!(&**expr, IrExpr::CharSet(_))
+                ),
+                "expected Repeat(CharSet), got {:?}",
                 &items[1]
             );
         }

@@ -1,30 +1,31 @@
 use faputa_meta::ast::{BuiltinPredicate, CompareOp, GuardCondition};
-use faputa_meta::ir::{Boundary, CharRange, DispatchArm, IrExpr, IrProgram};
+use faputa_meta::ir::{Boundary, CharRange};
+use faputa_meta::mir::{DispatchArm, MirExpr, MirProgram};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 /// Generate winnow combinator code for an IR expression.
-pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
+pub(crate) fn generate_expr(expr: &MirExpr, ir: &MirProgram) -> TokenStream {
     match expr {
-        IrExpr::Literal(s) => {
+        MirExpr::Literal(s) => {
             quote! { literal(#s) }
         }
 
-        IrExpr::CharSet(ranges) => generate_one_of(ranges),
+        MirExpr::CharSet(ranges) => generate_one_of(ranges),
 
-        IrExpr::Any => {
+        MirExpr::Any => {
             quote! { any.void() }
         }
 
-        IrExpr::Boundary(boundary) => generate_boundary(boundary),
+        MirExpr::Boundary(boundary) => generate_boundary(boundary),
 
-        IrExpr::RuleRef(idx) => {
+        MirExpr::RuleRef(idx) => {
             let name = &ir.rules[*idx].name;
             let fn_name = format_ident!("{}", name);
             quote! { #fn_name }
         }
 
-        IrExpr::Seq(items) => {
+        MirExpr::Seq(items) => {
             let codes: Vec<_> = items.iter().map(|e| generate_expr(e, ir)).collect();
             if codes.len() <= 1 {
                 return quote! { (#(#codes),*) };
@@ -60,7 +61,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
             }
         }
 
-        IrExpr::Choice(items) => {
+        MirExpr::Choice(items) => {
             let codes: Vec<_> = items
                 .iter()
                 .map(|e| {
@@ -71,27 +72,27 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
             generate_alt(codes)
         }
 
-        IrExpr::Dispatch(arms) => generate_dispatch(arms, ir),
+        MirExpr::Dispatch(arms) => generate_dispatch(arms, ir),
 
-        IrExpr::Repeat { expr, min, max } => generate_repeat(expr, *min, *max, ir),
+        MirExpr::Repeat { expr, min, max } => generate_repeat(expr, *min, *max, ir),
 
-        IrExpr::Scan {
+        MirExpr::Scan {
             plain_ranges,
             specials,
             min,
         } => generate_scan(plain_ranges, specials, *min, ir),
 
-        IrExpr::PosLookahead(inner) => {
+        MirExpr::PosLookahead(inner) => {
             let inner_code = generate_expr(inner, ir);
             quote! { peek(#inner_code) }
         }
 
-        IrExpr::NegLookahead(inner) => {
+        MirExpr::NegLookahead(inner) => {
             let inner_code = generate_expr(inner, ir);
             quote! { not(#inner_code) }
         }
 
-        IrExpr::WithFlag { flag, body } => {
+        MirExpr::WithFlag { flag, body } => {
             let body_code = generate_expr(body, ir);
             quote! {
                 (|input: &mut Input<'i, ParseState<'i>>| {
@@ -104,7 +105,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
             }
         }
 
-        IrExpr::WithCounter {
+        MirExpr::WithCounter {
             counter,
             amount,
             body,
@@ -121,7 +122,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
             }
         }
 
-        IrExpr::When { condition, body } => {
+        MirExpr::When { condition, body } => {
             let condition_check = generate_condition_check(condition);
             let body_code = generate_expr(body, ir);
             quote! {
@@ -135,7 +136,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
             }
         }
 
-        IrExpr::DepthLimit { limit, body } => {
+        MirExpr::DepthLimit { limit, body } => {
             let limit = *limit as usize;
             let body_code = generate_expr(body, ir);
             quote! {
@@ -154,9 +155,11 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
             }
         }
 
-        IrExpr::TakeWhile { ranges, min, max } => generate_take_while(ranges, *min, *max),
+        MirExpr::TakeWhile { ranges, min, max } => generate_take_while(ranges, *min, *max),
 
-        IrExpr::Labeled { expr, label } => {
+        MirExpr::SeparatedList { first, rest } => generate_separated_list(first, rest, ir),
+
+        MirExpr::Labeled { expr, label } => {
             let inner = generate_expr(expr, ir);
             quote! { (#inner).context(StrContext::Expected(StrContextValue::Description(#label))) }
         }
@@ -291,7 +294,7 @@ fn generate_boundary(boundary: &Boundary) -> TokenStream {
     }
 }
 
-fn generate_repeat(expr: &IrExpr, min: u32, max: Option<u32>, ir: &IrProgram) -> TokenStream {
+fn generate_repeat(expr: &MirExpr, min: u32, max: Option<u32>, ir: &MirProgram) -> TokenStream {
     let inner = generate_expr(expr, ir);
     let fold = quote! { .fold(|| (), |(), _| ()) };
     let range = generate_repeat_range(min, max);
@@ -303,7 +306,7 @@ fn generate_repeat(expr: &IrExpr, min: u32, max: Option<u32>, ir: &IrProgram) ->
     }
 }
 
-fn generate_dispatch(arms: &[DispatchArm], ir: &IrProgram) -> TokenStream {
+fn generate_dispatch(arms: &[DispatchArm], ir: &MirProgram) -> TokenStream {
     let arms: Vec<_> = arms
         .iter()
         .map(|arm| {
@@ -331,7 +334,7 @@ fn generate_scan(
     plain_ranges: &[CharRange],
     specials: &[DispatchArm],
     min: u32,
-    ir: &IrProgram,
+    ir: &MirProgram,
 ) -> TokenStream {
     let bulk = generate_scan_bulk_parser(plain_ranges);
     let arms: Vec<_> = specials
@@ -415,6 +418,27 @@ fn generate_scan(
                 })
             }
         }
+    }
+}
+
+fn generate_separated_list(first: &MirExpr, rest: &MirExpr, ir: &MirProgram) -> TokenStream {
+    let first_code = generate_expr(first, ir);
+    let rest_code = generate_expr(rest, ir);
+    quote! {
+        (|input: &mut Input<'i, ParseState<'i>>| -> ModalResult<()> {
+            (#first_code).void().parse_next(input)?;
+            loop {
+                let checkpoint = input.checkpoint();
+                match (#rest_code).void().parse_next(input) {
+                    Ok(()) => {}
+                    Err(winnow::error::ErrMode::Backtrack(_)) => {
+                        input.reset(&checkpoint);
+                        return Ok(());
+                    }
+                    Err(err) => return Err(err),
+                }
+            }
+        })
     }
 }
 

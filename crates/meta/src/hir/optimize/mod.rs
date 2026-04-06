@@ -1,8 +1,5 @@
-mod dispatch;
 mod inline;
 mod normalize;
-mod patterns;
-mod scan;
 
 #[cfg(test)]
 mod tests;
@@ -37,17 +34,11 @@ pub fn optimize(program: IrProgram) -> IrProgram {
     let program = normalize::fuse_literals(program);
     tracing::debug!("phase 3b (small-rule inline) complete");
 
-    // Phase 4: Recognize fused patterns
-    let program = patterns::recognize_take_while(program);
-    tracing::debug!("phase 4 (pattern recognition) complete");
-
-    // Phase 5: Cleanup
+    // Phase 4: Cleanup
     let program = inline::eliminate_dead_rules(program);
     let program = inline::compute_ref_counts(program);
-    let program = dispatch::recognize_dispatch(program);
-    let program = scan::recognize_scan_repeat(program);
     let entry_points = program.rules.iter().filter(|r| r.ref_count == 0).count();
-    tracing::debug!(entry_points, "phase 5 (cleanup) complete");
+    tracing::debug!(entry_points, "phase 4 (cleanup) complete");
     program
 }
 

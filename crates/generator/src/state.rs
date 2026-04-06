@@ -1,10 +1,10 @@
 use faputa_meta::ast::StateKind;
-use faputa_meta::ir::IrProgram;
+use faputa_meta::mir::MirProgram;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 /// Generate the `ParseState` struct and its `faputa::State` impl.
-pub(crate) fn generate_state(ir: &IrProgram) -> TokenStream {
+pub(crate) fn generate_state(ir: &MirProgram) -> TokenStream {
     let flags: Vec<_> = ir
         .state_decls
         .iter()

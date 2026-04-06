@@ -1,4 +1,4 @@
-use faputa_meta::ir::{IrProgram, IrRule};
+use faputa_meta::mir::{MirProgram, MirRule};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -6,7 +6,7 @@ use crate::expr::generate_expr;
 use crate::statement::generate_statements;
 
 /// Generate a function for each non-inlined rule in the program.
-pub(crate) fn generate_rules(ir: &IrProgram) -> TokenStream {
+pub(crate) fn generate_rules(ir: &MirProgram) -> TokenStream {
     let fns: Vec<_> = ir
         .rules
         .iter()
@@ -16,7 +16,7 @@ pub(crate) fn generate_rules(ir: &IrProgram) -> TokenStream {
     quote! { #(#fns)* }
 }
 
-fn generate_rule(rule: &IrRule, ir: &IrProgram) -> TokenStream {
+fn generate_rule(rule: &MirRule, ir: &MirProgram) -> TokenStream {
     let fn_name = format_ident!("{}", rule.name);
     let label = rule.error_label.as_deref().unwrap_or(&rule.name);
     let is_entry_point = rule.ref_count == 0;
