@@ -1,5 +1,5 @@
-use logos::Logos;
 use faputa_meta::lexer::Token;
+use logos::Logos;
 
 fn lex(input: &str) -> Vec<Token<'_>> {
     Token::lexer(input).filter_map(|t| t.ok()).collect()
