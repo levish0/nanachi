@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-04-06
+
+### Added
+
+- **README documentation** across the project
+  - Workspace-level `README.md` with quick start, crate layout, error-label examples, and debug feature usage
+  - Per-crate READMEs for `faputa`, `faputa_meta`, `faputa_generator`, and `faputa_derive`
+
+- **Runtime parser trace feature** on the main crate
+  - `faputa/debug` now forwards to `winnow/debug`
+  - Generated entry-point parsers can emit winnow's hierarchical parse tree to stderr when the feature is enabled
+  - Debug tracing is now opt-in at the crate feature level, so default builds keep the fast path unchanged
+
+### Changed
+
+- **Project renamed from Nanachi to Faputa**
+  - Workspace crate names updated: `nanachi*` → `faputa*`
+  - Internal generated module names updated: `__nanachi_*` → `__faputa_*`
+  - Repository metadata, examples, docs, tests, benches, and user-facing strings updated to the new name
+
+- **DSL file extension renamed**: `.nanachi` → `.faputa`
+  - Grammar files, fixtures, fuzz corpora, examples, and test loaders now use `.faputa`
+  - End-to-end build scripts and derive/example paths updated accordingly
+  - DSL documentation moved from `docs/nanachi-spec.md` to `docs/faputa-spec.md`
+
 ## [0.1.4] - 2026-04-06
 
 ### Added
