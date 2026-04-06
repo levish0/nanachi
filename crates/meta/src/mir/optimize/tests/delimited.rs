@@ -19,7 +19,12 @@ fn recognizes_delimited_string_shape() {
 
 #[test]
 fn ignores_plain_sequence_without_delimiters() {
-    let ir = optimized(r#"triple = { "a" "b" "c" }"#);
+    let ir = optimized(
+        r#"
+        prefix = { "a"+ }
+        triple = { prefix "b" "c" }
+    "#,
+    );
     let triple = ir.rules.iter().find(|r| r.name == "triple").unwrap();
     assert!(matches!(&triple.expr, MirExpr::Seq(_)));
 }
