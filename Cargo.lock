@@ -346,15 +346,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "faputa_debugger"
-version = "0.1.7"
-dependencies = [
- "faputa",
- "faputa_meta",
- "faputa_vm",
-]
-
-[[package]]
 name = "faputa_derive"
 version = "0.1.7"
 dependencies = [
@@ -409,14 +400,6 @@ dependencies = [
  "logos",
  "proptest",
  "tracing",
-]
-
-[[package]]
-name = "faputa_vm"
-version = "0.1.7"
-dependencies = [
- "faputa",
- "faputa_meta",
 ]
 
 [[package]]

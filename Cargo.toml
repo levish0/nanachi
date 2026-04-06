@@ -16,12 +16,10 @@ readme = "README.md"
 
 [workspace.dependencies]
 # Internal crates
-faputa = { path = "crates/faputa", version = "0.1.6" }
-faputa_meta = { path = "crates/meta", version = "0.1.6" }
-faputa_generator = { path = "crates/generator", version = "0.1.6" }
-faputa_derive = { path = "crates/derive", version = "0.1.6" }
-faputa_vm = { path = "crates/vm", version = "0.1.6" }
-faputa_debugger = { path = "crates/debugger", version = "0.1.6" }
+faputa = { path = "crates/faputa", version = "0.1.7" }
+faputa_meta = { path = "crates/meta", version = "0.1.7" }
+faputa_generator = { path = "crates/generator", version = "0.1.7" }
+faputa_derive = { path = "crates/derive", version = "0.1.7" }
 
 # External dependencies
 winnow = { version = "1.0.1", features = ["simd"] }

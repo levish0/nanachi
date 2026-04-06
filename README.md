@@ -21,6 +21,8 @@ A stateful parser generator that compiles `.faputa` grammar files into fast
 
 ## Quick Start
 
+### Derive Macro
+
 Add the dependencies:
 
 ```toml
@@ -57,6 +59,57 @@ fn main() {
 ```
 
 Each rule generates a `parse_<name>(&str) -> Result<&str, String>` method.
+
+### `build.rs` Codegen
+
+If you prefer pest-style generated sources at build time, Faputa also supports
+that flow directly.
+
+Add runtime dependencies plus build dependencies:
+
+```toml
+[dependencies]
+faputa = "0.1"
+
+[build-dependencies]
+faputa_meta = "0.1"
+faputa_generator = "0.1"
+prettyplease = "0.2"
+syn = "2"
+```
+
+Generate the parser in `build.rs`:
+
+```rust
+use std::path::Path;
+
+fn main() {
+    let source = std::fs::read_to_string("grammar.faputa").unwrap();
+    let grammar = faputa_meta::compile(&source).unwrap();
+    let tokens = faputa_generator::generate(&grammar);
+
+    let code = match syn::parse2::<syn::File>(tokens.clone()) {
+        Ok(file) => prettyplease::unparse(&file),
+        Err(_) => tokens.to_string(),
+    };
+
+    let out_file = Path::new(&std::env::var("OUT_DIR").unwrap()).join("grammar.rs");
+    std::fs::write(&out_file, code).unwrap();
+
+    println!("cargo::rerun-if-changed=grammar.faputa");
+}
+```
+
+Include the generated module from your crate:
+
+```rust
+include!(concat!(env!("OUT_DIR"), "/grammar.rs"));
+
+fn main() {
+    let parsed = __faputa::parse_assign("x=42").unwrap();
+    println!("{parsed}");
+}
+```
 
 ## Grammar Syntax
 
