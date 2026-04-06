@@ -4,7 +4,11 @@ use crate::mir::{DispatchArm, MirExpr, MirProgram, MirRule};
 pub(super) fn recognize_scan_repeat(mut program: MirProgram) -> MirProgram {
     let snapshot = program.rules.clone();
     for rule in &mut program.rules {
+        let before = rule.expr.clone();
         rule.expr = recognize_scan_expr(rule.expr.clone(), &snapshot);
+        if rule.expr != before {
+            tracing::trace!(rule = %rule.name, "recognize_scan_repeat: transformed");
+        }
     }
     program
 }

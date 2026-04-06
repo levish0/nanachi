@@ -2,20 +2,31 @@ use crate::hir::{HirExpr, HirProgram};
 
 use super::{MirExpr, MirProgram, MirRule};
 
+#[tracing::instrument(skip_all, fields(rules = program.rules.len()))]
 pub fn lower(program: &HirProgram) -> MirProgram {
     MirProgram {
         state_decls: program.state_decls.clone(),
         rules: program
             .rules
             .iter()
-            .map(|rule| MirRule {
-                name: rule.name.clone(),
-                inline: rule.inline,
-                error_label: rule.error_label.clone(),
-                guards: rule.guards.clone(),
-                emits: rule.emits.clone(),
-                expr: lower_expr(&rule.expr),
-                ref_count: rule.ref_count,
+            .map(|rule| {
+                let mir_rule = MirRule {
+                    name: rule.name.clone(),
+                    inline: rule.inline,
+                    error_label: rule.error_label.clone(),
+                    guards: rule.guards.clone(),
+                    emits: rule.emits.clone(),
+                    expr: lower_expr(&rule.expr),
+                    ref_count: rule.ref_count,
+                };
+                tracing::trace!(
+                    rule = %mir_rule.name,
+                    guards = mir_rule.guards.len(),
+                    emits = mir_rule.emits.len(),
+                    has_error_label = mir_rule.error_label.is_some(),
+                    "lowered hir rule to mir"
+                );
+                mir_rule
             })
             .collect(),
     }

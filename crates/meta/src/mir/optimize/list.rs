@@ -2,7 +2,11 @@ use crate::mir::{MirExpr, MirProgram};
 
 pub(super) fn recognize_separated_list(mut program: MirProgram) -> MirProgram {
     for rule in &mut program.rules {
+        let before = rule.expr.clone();
         rule.expr = recognize_list_expr(rule.expr.clone());
+        if rule.expr != before {
+            tracing::trace!(rule = %rule.name, "recognize_separated_list: transformed");
+        }
     }
     program
 }

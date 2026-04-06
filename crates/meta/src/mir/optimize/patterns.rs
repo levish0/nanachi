@@ -2,7 +2,11 @@ use crate::mir::{DispatchArm, MirExpr, MirProgram};
 
 pub(super) fn recognize_take_while(mut program: MirProgram) -> MirProgram {
     for rule in &mut program.rules {
+        let before = rule.expr.clone();
         rule.expr = recognize_take_while_expr(rule.expr.clone());
+        if rule.expr != before {
+            tracing::trace!(rule = %rule.name, "recognize_take_while: transformed");
+        }
     }
     program
 }

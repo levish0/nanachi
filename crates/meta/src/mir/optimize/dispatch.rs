@@ -4,7 +4,11 @@ use crate::mir::{DispatchArm, MirExpr, MirProgram, MirRule};
 pub(super) fn recognize_dispatch(mut program: MirProgram) -> MirProgram {
     let snapshot = program.rules.clone();
     for rule in &mut program.rules {
+        let before = rule.expr.clone();
         rule.expr = recognize_dispatch_expr(rule.expr.clone(), &snapshot);
+        if rule.expr != before {
+            tracing::trace!(rule = %rule.name, "recognize_dispatch: transformed");
+        }
     }
     program
 }

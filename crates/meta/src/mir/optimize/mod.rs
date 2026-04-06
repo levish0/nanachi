@@ -10,11 +10,33 @@ use crate::hir::CharRange;
 
 use super::MirProgram;
 
+#[tracing::instrument(skip_all, fields(rules = program.rules.len()))]
 pub fn optimize(program: MirProgram) -> MirProgram {
+    let before = program.clone();
     let program = patterns::recognize_take_while(program);
+    tracing::debug!(
+        transformed = changed_rule_count(&before, &program),
+        "phase 1 (take_while) complete"
+    );
+    let before = program.clone();
     let program = dispatch::recognize_dispatch(program);
+    tracing::debug!(
+        transformed = changed_rule_count(&before, &program),
+        "phase 2 (dispatch) complete"
+    );
+    let before = program.clone();
     let program = scan::recognize_scan_repeat(program);
-    list::recognize_separated_list(program)
+    tracing::debug!(
+        transformed = changed_rule_count(&before, &program),
+        "phase 3 (scan) complete"
+    );
+    let before = program.clone();
+    let program = list::recognize_separated_list(program);
+    tracing::debug!(
+        transformed = changed_rule_count(&before, &program),
+        "phase 4 (separated_list) complete"
+    );
+    program
 }
 
 pub(super) fn coalesce_ranges(mut ranges: Vec<CharRange>) -> Vec<CharRange> {
@@ -33,4 +55,13 @@ pub(super) fn coalesce_ranges(mut ranges: Vec<CharRange>) -> Vec<CharRange> {
         }
     }
     result
+}
+
+fn changed_rule_count(before: &MirProgram, after: &MirProgram) -> usize {
+    before
+        .rules
+        .iter()
+        .zip(&after.rules)
+        .filter(|(left, right)| left.expr != right.expr)
+        .count()
 }
