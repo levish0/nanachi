@@ -748,18 +748,15 @@ mod tests {
         "#,
         );
         // alpha and digit are trivial → inlined but kept.
-        // ident should have CharSet + AsciiBuiltin(Alphanumeric0) (from the merged repeat).
+        // ident should have CharSet + TakeWhile (from the merged repeat).
         let ident = ir.rules.iter().find(|r| r.name == "ident").unwrap();
         match &ident.expr {
             IrExpr::Seq(items) => {
                 assert!(matches!(&items[0], IrExpr::CharSet(_)));
-                // (alpha | digit)* → merged CharSet repeat → TakeWhile → AsciiBuiltin
+                // (alpha | digit)* → merged CharSet repeat → TakeWhile
                 assert!(
-                    matches!(
-                        &items[1],
-                        IrExpr::AsciiBuiltin(_) | IrExpr::TakeWhile { .. }
-                    ),
-                    "expected AsciiBuiltin or TakeWhile, got {:?}",
+                    matches!(&items[1], IrExpr::TakeWhile { .. }),
+                    "expected TakeWhile, got {:?}",
                     &items[1]
                 );
             }
