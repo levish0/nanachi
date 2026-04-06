@@ -13,7 +13,7 @@ fn generate_code(source: &str) -> String {
 fn generates_empty_state_for_no_declarations() {
     let code = generate_code("greeting = { \"hello\" \"world\" }");
     assert!(code.contains("struct ParseState"));
-    assert!(code.contains("impl State for ParseState"));
+    assert!(code.contains("impl < 'i > State for ParseState < 'i >"));
     assert!(code.contains("fn greeting"));
 }
 

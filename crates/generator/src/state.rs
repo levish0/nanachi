@@ -69,17 +69,17 @@ pub(crate) fn generate_state(ir: &IrProgram) -> TokenStream {
 
     quote! {
         #[derive(Debug, Clone, Default)]
-        pub struct ParseState {
-            original_input: Vec<u8>,
+        pub struct ParseState<'i> {
+            original_input: &'i [u8],
             furthest_pos: usize,
             #(#flag_fields,)*
             #(#counter_fields,)*
         }
 
-        impl ParseState {
-            pub fn new(input: &str) -> Self {
+        impl<'i> ParseState<'i> {
+            pub fn new(input: &'i str) -> Self {
                 Self {
-                    original_input: input.as_bytes().to_vec(),
+                    original_input: input.as_bytes(),
                     ..Default::default()
                 }
             }
@@ -97,9 +97,9 @@ pub(crate) fn generate_state(ir: &IrProgram) -> TokenStream {
             }
         }
 
-        impl State for ParseState {
+        impl<'i> State for ParseState<'i> {
             fn original_input(&self) -> &[u8] {
-                &self.original_input
+                self.original_input
             }
 
             fn get_flag(&self, name: &str) -> bool {

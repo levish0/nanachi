@@ -35,7 +35,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
             for (i, code) in codes.into_iter().enumerate() {
                 if i > 0 {
                     interleaved.push(quote! {
-                        (|input: &mut Input<'_, ParseState>| -> ModalResult<()> {
+                        (|input: &mut Input<'_, ParseState<'_>>| -> ModalResult<()> {
                             input.state.track_pos(input.current_token_start());
                             Ok(())
                         })
@@ -50,7 +50,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
                 quote! { (#(#interleaved),*) }
             } else {
                 quote! {
-                    (|input: &mut Input<'_, ParseState>| -> ModalResult<()> {
+                    (|input: &mut Input<'_, ParseState<'_>>| -> ModalResult<()> {
                         #(
                             (#interleaved).void().parse_next(input)?;
                         )*
@@ -86,7 +86,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
         IrExpr::WithFlag { flag, body } => {
             let body_code = generate_expr(body, ir);
             quote! {
-                (|input: &mut Input<'_, ParseState>| {
+                (|input: &mut Input<'_, ParseState<'_>>| {
                     let prev = input.state.get_flag(#flag);
                     input.state.set_flag(#flag, true);
                     let result = (#body_code).void().parse_next(input);
@@ -104,7 +104,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
             let amount = *amount as usize;
             let body_code = generate_expr(body, ir);
             quote! {
-                (|input: &mut Input<'_, ParseState>| {
+                (|input: &mut Input<'_, ParseState<'_>>| {
                     input.state.increment_counter(#counter, #amount);
                     let result = (#body_code).void().parse_next(input);
                     input.state.decrement_counter(#counter, #amount);
@@ -117,7 +117,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
             let condition_check = generate_condition_check(condition);
             let body_code = generate_expr(body, ir);
             quote! {
-                (|input: &mut Input<'_, ParseState>| {
+                (|input: &mut Input<'_, ParseState<'_>>| {
                     if #condition_check {
                         (#body_code).void().parse_next(input)
                     } else {
@@ -131,7 +131,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
             let limit = *limit as usize;
             let body_code = generate_expr(body, ir);
             quote! {
-                (|input: &mut Input<'_, ParseState>| {
+                (|input: &mut Input<'_, ParseState<'_>>| {
                     let depth = input.state.get_counter("__recursion_depth");
                     if depth >= #limit {
                         return Err(winnow::error::ErrMode::Backtrack(
@@ -234,7 +234,7 @@ fn generate_boundary(boundary: &Boundary) -> TokenStream {
     match boundary {
         Boundary::Soi => {
             quote! {
-                (|input: &mut Input<'_, ParseState>| {
+                (|input: &mut Input<'_, ParseState<'_>>| {
                     if input.current_token_start() == 0 {
                         Ok(())
                     } else {
@@ -250,7 +250,7 @@ fn generate_boundary(boundary: &Boundary) -> TokenStream {
         }
         Boundary::LineStart => {
             quote! {
-                (|input: &mut Input<'_, ParseState>| {
+                (|input: &mut Input<'_, ParseState<'_>>| {
                     let pos = input.current_token_start();
                     if input.state.is_at_line_start(pos) {
                         Ok(())
@@ -264,7 +264,7 @@ fn generate_boundary(boundary: &Boundary) -> TokenStream {
         }
         Boundary::LineEnd => {
             quote! {
-                (|input: &mut Input<'_, ParseState>| {
+                (|input: &mut Input<'_, ParseState<'_>>| {
                     let pos = input.current_token_start();
                     if input.state.is_at_line_end(pos) {
                         Ok(())
