@@ -8,21 +8,27 @@ fn workspace_root() -> std::path::PathBuf {
         .expect("failed to find workspace root")
 }
 
-fn validate_valid(name: &str) {
-    let path = workspace_root().join(format!("fixtures/valid/{name}.faputa"));
+fn read_fixture_source(path: &std::path::Path) -> String {
     let path = path.display().to_string();
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
-    let grammar = parser::parse(&source).unwrap_or_else(|e| panic!("{path}: {e}"));
+    source.replace("\r\n", "\n").replace('\r', "\n")
+}
+
+fn validate_valid(name: &str) {
+    let path = workspace_root().join(format!("fixtures/valid/{name}.faputa"));
+    let path_str = path.display().to_string();
+    let source = read_fixture_source(&path);
+    let grammar = parser::parse(&source).unwrap_or_else(|e| panic!("{path_str}: {e}"));
     if let Err(errors) = validator::validate(&grammar) {
-        panic!("{path}: validation errors: {errors:?}");
+        panic!("{path_str}: validation errors: {errors:?}");
     }
 }
 
 fn validate_invalid(name: &str) -> Vec<ValidationError> {
     let path = workspace_root().join(format!("fixtures/invalid/{name}.faputa"));
-    let path = path.display().to_string();
-    let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
-    let grammar = parser::parse(&source).unwrap_or_else(|e| panic!("{path}: {e}"));
+    let path_str = path.display().to_string();
+    let source = read_fixture_source(&path);
+    let grammar = parser::parse(&source).unwrap_or_else(|e| panic!("{path_str}: {e}"));
     validator::validate(&grammar).expect_err(&format!("{name} should have validation errors"))
 }
 
