@@ -716,7 +716,14 @@ mod tests {
         // The Repeat { CharSet } pattern becomes TakeWhile(Digit, 1, None).
         let number = ir.rules.iter().find(|r| r.name == "number").unwrap();
         assert!(
-            matches!(&number.expr, IrExpr::TakeWhile { min: 1, max: None, .. }),
+            matches!(
+                &number.expr,
+                IrExpr::TakeWhile {
+                    min: 1,
+                    max: None,
+                    ..
+                }
+            ),
             "expected TakeWhile, got {:?}",
             &number.expr
         );
@@ -812,14 +819,28 @@ mod tests {
     fn take_while_recognized() {
         // digit* → TakeWhile
         let ir = optimized("d = { '0'..'9'* }");
-        assert!(matches!(&ir.rules[0].expr, IrExpr::TakeWhile { min: 0, max: None, .. }));
+        assert!(matches!(
+            &ir.rules[0].expr,
+            IrExpr::TakeWhile {
+                min: 0,
+                max: None,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn take_while_from_choice_repeat() {
         // (" " | "\t" | "\n" | "\r")* → single CharSet from merge → TakeWhile
         let ir = optimized(r#"ws = { (" " | "\t" | "\n" | "\r")* }"#);
-        assert!(matches!(&ir.rules[0].expr, IrExpr::TakeWhile { min: 0, max: None, .. }));
+        assert!(matches!(
+            &ir.rules[0].expr,
+            IrExpr::TakeWhile {
+                min: 0,
+                max: None,
+                ..
+            }
+        ));
     }
 
     #[test]
