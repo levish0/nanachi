@@ -3,8 +3,8 @@ mod rules;
 mod state;
 mod statement;
 
-use nanachi_meta::ast::Grammar;
-use nanachi_meta::ir::{self, IrProgram};
+use faputa_meta::ast::Grammar;
+use faputa_meta::ir::{self, IrProgram};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -18,13 +18,13 @@ fn generate_module_inner(grammar: &Grammar) -> TokenStream {
     let entry_code = generate_entry(&ir);
     tracing::debug!(rules = ir.rules.len(), "code generation complete");
     quote::quote! {
-        use nanachi::winnow;
-        use nanachi::winnow::prelude::*;
-        use nanachi::winnow::combinator::*;
-        use nanachi::winnow::token::*;
-        use nanachi::winnow::stream::Location;
-        use nanachi::winnow::error::{StrContext, StrContextValue};
-        use nanachi::{Input, LineIndex, State};
+        use faputa::winnow;
+        use faputa::winnow::prelude::*;
+        use faputa::winnow::combinator::*;
+        use faputa::winnow::token::*;
+        use faputa::winnow::stream::Location;
+        use faputa::winnow::error::{StrContext, StrContextValue};
+        use faputa::{Input, LineIndex, State};
 
         #state_code
         #rules_code
@@ -32,12 +32,12 @@ fn generate_module_inner(grammar: &Grammar) -> TokenStream {
     }
 }
 
-/// Generate parser code as `pub mod __nanachi { ... }` (for build.rs).
+/// Generate parser code as `pub mod __faputa { ... }` (for build.rs).
 pub fn generate(grammar: &Grammar) -> TokenStream {
     let inner = generate_module_inner(grammar);
     quote::quote! {
         #[allow(dead_code, unused_imports, unused_variables)]
-        pub mod __nanachi {
+        pub mod __faputa {
             #inner
         }
     }
@@ -67,7 +67,7 @@ fn generate_entry(ir: &IrProgram) -> TokenStream {
                 pub fn #parse_fn(source: &str) -> Result<&str, String> {
                     let state = ParseState::new(source);
                     let mut input = Input {
-                        input: nanachi::LocatingSlice::new(source),
+                        input: faputa::LocatingSlice::new(source),
                         state,
                     };
                     let matched = #rule_fn.parse_next(&mut input)

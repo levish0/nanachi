@@ -1,4 +1,4 @@
-use nanachi_meta::ast::{BuiltinPredicate, CompareOp, GuardCondition};
+use faputa_meta::ast::{BuiltinPredicate, CompareOp, GuardCondition};
 use proc_macro2::TokenStream;
 use quote::quote;
 

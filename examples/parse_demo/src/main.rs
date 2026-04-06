@@ -1,10 +1,10 @@
-use nanachi_derive::Parser;
+use faputa_derive::Parser;
 use std::env;
 use std::fs;
 use std::process;
 
 #[derive(Parser)]
-#[grammar("grammar.nanachi")]
+#[grammar("grammar.faputa")]
 struct Demo;
 
 fn main() {

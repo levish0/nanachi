@@ -1,5 +1,5 @@
 [package]
-name = "nanachi_fuzz"
+name = "faputa_fuzz"
 version = "0.0.0"
 publish = false
 edition = "2024"
@@ -11,7 +11,7 @@ fuzzing = ["dep:libfuzzer-sys"]
 cargo-fuzz = true
 
 [dependencies]
-nanachi_meta.workspace = true
+faputa_meta.workspace = true
 libfuzzer-sys = { workspace = true, optional = true }
 
 [[bin]]

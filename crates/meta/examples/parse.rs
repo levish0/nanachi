@@ -1,13 +1,13 @@
-/// Parse a .nanachi file and print its AST.
+/// Parse a .faputa file and print its AST.
 ///
 /// ```sh
-/// cargo run -p nanachi_meta --example parse -- examples/simple.nanachi
-/// cargo run -p nanachi_meta --example parse -- examples/markdown_bold.nanachi
+/// cargo run -p faputa_meta --example parse -- examples/simple.faputa
+/// cargo run -p faputa_meta --example parse -- examples/markdown_bold.faputa
 /// ```
 
 fn main() {
     let path = std::env::args().nth(1).unwrap_or_else(|| {
-        eprintln!("Usage: parse <file.nanachi>");
+        eprintln!("Usage: parse <file.faputa>");
         std::process::exit(1);
     });
 
@@ -16,7 +16,7 @@ fn main() {
         std::process::exit(1);
     });
 
-    match nanachi_meta::compile(&source) {
+    match faputa_meta::compile(&source) {
         Ok(grammar) => {
             println!("=== Parsed {path} ===\n");
             for item in &grammar.items {

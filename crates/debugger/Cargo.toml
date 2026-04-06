@@ -1,6 +1,6 @@
 [package]
-name = "nanachi_debugger"
-description = "nanachi grammar debugger"
+name = "faputa_debugger"
+description = "faputa grammar debugger"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -9,6 +9,6 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-nanachi.workspace = true
-nanachi_meta.workspace = true
-nanachi_vm.workspace = true
+faputa.workspace = true
+faputa_meta.workspace = true
+faputa_vm.workspace = true

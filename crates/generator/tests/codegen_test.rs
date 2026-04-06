@@ -1,11 +1,11 @@
-use nanachi_meta::parser;
-use nanachi_meta::validator;
+use faputa_meta::parser;
+use faputa_meta::validator;
 
 /// Helper: parse + validate + generate, return the generated code as a string.
 fn generate_code(source: &str) -> String {
     let grammar = parser::parse(source).expect("parse failed");
     validator::validate(&grammar).expect("validation failed");
-    let tokens = nanachi_generator::generate(&grammar);
+    let tokens = faputa_generator::generate(&grammar);
     tokens.to_string()
 }
 

@@ -1,5 +1,5 @@
-use nanachi_meta::parser;
-use nanachi_meta::validator::{self, ValidationError};
+use faputa_meta::parser;
+use faputa_meta::validator::{self, ValidationError};
 
 fn workspace_root() -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -9,7 +9,7 @@ fn workspace_root() -> std::path::PathBuf {
 }
 
 fn validate_valid(name: &str) {
-    let path = workspace_root().join(format!("fixtures/valid/{name}.nanachi"));
+    let path = workspace_root().join(format!("fixtures/valid/{name}.faputa"));
     let path = path.display().to_string();
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     let grammar = parser::parse(&source).unwrap_or_else(|e| panic!("{path}: {e}"));
@@ -19,7 +19,7 @@ fn validate_valid(name: &str) {
 }
 
 fn validate_invalid(name: &str) -> Vec<ValidationError> {
-    let path = workspace_root().join(format!("fixtures/invalid/{name}.nanachi"));
+    let path = workspace_root().join(format!("fixtures/invalid/{name}.faputa"));
     let path = path.display().to_string();
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     let grammar = parser::parse(&source).unwrap_or_else(|e| panic!("{path}: {e}"));

@@ -1,14 +1,14 @@
 [package]
-name = "nanachi_e2e_tests"
+name = "faputa_e2e_tests"
 version = "0.0.0"
 edition.workspace = true
 publish = false
 
 [dependencies]
-nanachi.workspace = true
+faputa.workspace = true
 
 [build-dependencies]
-nanachi_meta.workspace = true
-nanachi_generator.workspace = true
+faputa_meta.workspace = true
+faputa_generator.workspace = true
 prettyplease.workspace = true
 syn.workspace = true

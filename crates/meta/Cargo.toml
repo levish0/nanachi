@@ -1,6 +1,6 @@
 [package]
-name = "nanachi_meta"
-description = "nanachi grammar parser and validator"
+name = "faputa_meta"
+description = "faputa grammar parser and validator"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -9,7 +9,7 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-nanachi.workspace = true
+faputa.workspace = true
 logos.workspace = true
 tracing.workspace = true
 

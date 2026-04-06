@@ -1,5 +1,5 @@
-use nanachi_meta::ast::{BuiltinPredicate, CompareOp, GuardCondition};
-use nanachi_meta::ir::{Boundary, CharRange, IrExpr, IrProgram};
+use faputa_meta::ast::{BuiltinPredicate, CompareOp, GuardCondition};
+use faputa_meta::ir::{Boundary, CharRange, IrExpr, IrProgram};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 

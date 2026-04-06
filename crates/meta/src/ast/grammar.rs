@@ -1,6 +1,6 @@
 use super::{Expr, StateDecl, Statement};
 
-/// A complete .nanachi grammar file.
+/// A complete .faputa grammar file.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Grammar {
     pub items: Vec<Item>,

@@ -1,5 +1,5 @@
 use logos::Logos;
-use nanachi_meta::lexer::Token;
+use faputa_meta::lexer::Token;
 
 fn lex(input: &str) -> Vec<Token<'_>> {
     Token::lexer(input).filter_map(|t| t.ok()).collect()

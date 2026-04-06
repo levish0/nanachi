@@ -1,8 +1,8 @@
-/// Generate winnow parser code from a .nanachi file.
+/// Generate winnow parser code from a .faputa file.
 ///
 /// ```sh
-/// cargo run -p nanachi_generator --example codegen -- examples/simple.nanachi
-/// cargo run -p nanachi_generator --example codegen -- examples/markdown_bold.nanachi
+/// cargo run -p faputa_generator --example codegen -- examples/simple.faputa
+/// cargo run -p faputa_generator --example codegen -- examples/markdown_bold.faputa
 /// ```
 ///
 /// Set `RUST_LOG=debug` to see tracing output from the compilation pipeline.
@@ -14,7 +14,7 @@ fn main() {
         .init();
 
     let path = std::env::args().nth(1).unwrap_or_else(|| {
-        eprintln!("Usage: codegen <file.nanachi>");
+        eprintln!("Usage: codegen <file.faputa>");
         std::process::exit(1);
     });
 
@@ -23,12 +23,12 @@ fn main() {
         std::process::exit(1);
     });
 
-    let grammar = nanachi_meta::compile(&source).unwrap_or_else(|e| {
+    let grammar = faputa_meta::compile(&source).unwrap_or_else(|e| {
         eprintln!("Error: {e:?}");
         std::process::exit(1);
     });
 
-    let code = nanachi_generator::generate(&grammar);
+    let code = faputa_generator::generate(&grammar);
 
     // Pretty-print if possible, fall back to raw token stream
     match syn::parse2::<syn::File>(code.clone()) {

@@ -1,4 +1,4 @@
-use nanachi_fuzz::{exercise_bytes, exercise_utf8, project_to_dslish};
+use faputa_fuzz::{exercise_bytes, exercise_utf8, project_to_dslish};
 
 fn read_corpus_dir(name: &str) -> Vec<Vec<u8>> {
     let path = format!("{}/corpus/{name}", env!("CARGO_MANIFEST_DIR"));

@@ -15,20 +15,20 @@ pub fn derive_parser(input: TokenStream) -> TokenStream {
 fn derive_parser_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let source = extract_grammar_source(input)?;
 
-    let grammar = nanachi_meta::compile(&source).map_err(|e| {
-        syn::Error::new_spanned(&input.ident, format!("nanachi compile error: {e:?}"))
+    let grammar = faputa_meta::compile(&source).map_err(|e| {
+        syn::Error::new_spanned(&input.ident, format!("faputa compile error: {e:?}"))
     })?;
 
     let struct_name = &input.ident;
-    let mod_name = quote::format_ident!("__nanachi_{}", to_snake_case(&struct_name.to_string()));
+    let mod_name = quote::format_ident!("__faputa_{}", to_snake_case(&struct_name.to_string()));
 
-    let generated = nanachi_generator::generate_with_mod(&grammar, &mod_name);
+    let generated = faputa_generator::generate_with_mod(&grammar, &mod_name);
 
     let rule_methods: Vec<_> = grammar
         .items
         .iter()
         .filter_map(|item| match item {
-            nanachi_meta::ast::Item::RuleDef(rule) => {
+            faputa_meta::ast::Item::RuleDef(rule) => {
                 let parse_fn = quote::format_ident!("parse_{}", rule.name);
                 Some(quote! {
                     pub fn #parse_fn(source: &str) -> Result<&str, String> {

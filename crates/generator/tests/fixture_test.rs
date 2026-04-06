@@ -1,6 +1,6 @@
 /// Fixture-based codegen tests.
 ///
-/// Each valid .nanachi fixture from nanachi_meta is:
+/// Each valid .faputa fixture from faputa_meta is:
 /// 1. Parsed + validated
 /// 2. Fed to the generator
 /// 3. Checked that the output is valid Rust (parseable by syn)
@@ -13,11 +13,11 @@ fn workspace_root() -> std::path::PathBuf {
 }
 
 fn generate_fixture(name: &str) -> String {
-    let path = workspace_root().join(format!("fixtures/valid/{name}.nanachi"));
+    let path = workspace_root().join(format!("fixtures/valid/{name}.faputa"));
     let path = path.display().to_string();
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
-    let grammar = nanachi_meta::compile(&source).unwrap_or_else(|e| panic!("{path}: {e:?}"));
-    let tokens = nanachi_generator::generate(&grammar);
+    let grammar = faputa_meta::compile(&source).unwrap_or_else(|e| panic!("{path}: {e:?}"));
+    let tokens = faputa_generator::generate(&grammar);
     tokens.to_string()
 }
 
@@ -80,11 +80,11 @@ fn fixture_chaos_combo() {
 // ── Example file tests ──
 
 fn generate_example(name: &str) -> String {
-    let path = workspace_root().join(format!("examples/{name}.nanachi"));
+    let path = workspace_root().join(format!("examples/{name}.faputa"));
     let path = path.display().to_string();
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
-    let grammar = nanachi_meta::compile(&source).unwrap_or_else(|e| panic!("{path}: {e:?}"));
-    let tokens = nanachi_generator::generate(&grammar);
+    let grammar = faputa_meta::compile(&source).unwrap_or_else(|e| panic!("{path}: {e:?}"));
+    let tokens = faputa_generator::generate(&grammar);
     tokens.to_string()
 }
 

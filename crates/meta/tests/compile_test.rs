@@ -1,5 +1,5 @@
-use nanachi_meta::validator::ValidationError;
-use nanachi_meta::{CompileError, compile};
+use faputa_meta::validator::ValidationError;
+use faputa_meta::{CompileError, compile};
 
 fn workspace_root() -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -9,19 +9,19 @@ fn workspace_root() -> std::path::PathBuf {
 }
 
 fn valid_fixture_source(name: &str) -> String {
-    let path = workspace_root().join(format!("fixtures/valid/{name}.nanachi"));
+    let path = workspace_root().join(format!("fixtures/valid/{name}.faputa"));
     let path = path.display().to_string();
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
 fn invalid_fixture_source(name: &str) -> String {
-    let path = workspace_root().join(format!("fixtures/invalid/{name}.nanachi"));
+    let path = workspace_root().join(format!("fixtures/invalid/{name}.faputa"));
     let path = path.display().to_string();
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
 fn syntax_invalid_fixture_source(name: &str) -> String {
-    let path = workspace_root().join(format!("fixtures/syntax_invalid/{name}.nanachi"));
+    let path = workspace_root().join(format!("fixtures/syntax_invalid/{name}.faputa"));
     let path = path.display().to_string();
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }

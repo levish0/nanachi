@@ -18,14 +18,14 @@ fn main() {
         for entry in std::fs::read_dir(dir).unwrap() {
             let entry = entry.unwrap();
             let path = entry.path();
-            if path.extension().is_some_and(|ext| ext == "nanachi") {
+            if path.extension().is_some_and(|ext| ext == "faputa") {
                 let stem = path.file_stem().unwrap().to_str().unwrap();
                 let source = std::fs::read_to_string(&path).unwrap();
 
-                let grammar = nanachi_meta::compile(&source)
+                let grammar = faputa_meta::compile(&source)
                     .unwrap_or_else(|e| panic!("{}: {e:?}", path.display()));
 
-                let tokens = nanachi_generator::generate(&grammar);
+                let tokens = faputa_generator::generate(&grammar);
 
                 // Pretty-print for debuggability
                 let code = match syn::parse2::<syn::File>(tokens.clone()) {

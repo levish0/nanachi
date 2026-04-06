@@ -4,7 +4,7 @@ pub mod lexer;
 pub mod parser;
 pub mod validator;
 
-/// Parse and validate a `.nanachi` source string.
+/// Parse and validate a `.faputa` source string.
 ///
 /// This is a convenience wrapper that runs [`parser::parse`] followed by
 /// [`validator::validate`].  Callers that need finer control (e.g. showing

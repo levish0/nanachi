@@ -5,5 +5,5 @@ edition = "2024"
 publish = false
 
 [dependencies]
-nanachi.workspace = true
-nanachi_derive.workspace = true
+faputa.workspace = true
+faputa_derive.workspace = true

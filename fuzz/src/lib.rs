@@ -1,4 +1,4 @@
-use nanachi_meta::{compile, parser, validator};
+use faputa_meta::{compile, parser, validator};
 
 const DSLISH_ALPHABET: &[u8] =
     b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_ \n\t{}()|&!?+=,<>:*./'\"";

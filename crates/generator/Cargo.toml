@@ -1,6 +1,6 @@
 [package]
-name = "nanachi_generator"
-description = "nanachi code generator"
+name = "faputa_generator"
+description = "faputa code generator"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -9,8 +9,8 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-nanachi.workspace = true
-nanachi_meta.workspace = true
+faputa.workspace = true
+faputa_meta.workspace = true
 proc-macro2.workspace = true
 quote.workspace = true
 syn.workspace = true

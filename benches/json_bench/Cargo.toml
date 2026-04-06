@@ -9,8 +9,8 @@ name = "json_parse"
 harness = false
 
 [dependencies]
-nanachi.workspace = true
-nanachi_derive.workspace = true
+faputa.workspace = true
+faputa_derive.workspace = true
 pest.workspace = true
 pest_derive.workspace = true
 serde_json.workspace = true

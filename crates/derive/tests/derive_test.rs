@@ -1,4 +1,4 @@
-use nanachi_derive::Parser;
+use faputa_derive::Parser;
 
 // ── #[grammar_inline] ──
 
@@ -35,7 +35,7 @@ fn inline_grammar_error_uses_rule_label() {
 // ── #[grammar] with file path ──
 
 #[derive(Parser)]
-#[grammar("../../examples/simple.nanachi")]
+#[grammar("../../examples/simple.faputa")]
 struct SimpleParser;
 
 #[test]
@@ -56,7 +56,7 @@ fn file_grammar_rejects_digit_start() {
 // ── Stateful grammar ──
 
 #[derive(Parser)]
-#[grammar("../../examples/markdown_bold.nanachi")]
+#[grammar("../../examples/markdown_bold.faputa")]
 struct BoldParser;
 
 #[test]

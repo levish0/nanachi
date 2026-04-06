@@ -1,4 +1,4 @@
-use nanachi_derive::Parser;
+use faputa_derive::Parser;
 
 #[derive(Parser)]
 #[grammar_inline("rule = { \"x\" $ }")]

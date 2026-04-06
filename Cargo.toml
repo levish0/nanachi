@@ -6,7 +6,7 @@ resolver = "3"
 version = "0.1.4"
 authors = ["Levi Laine <shiueo.csh@gmail.com>"]
 license = "Apache-2.0"
-repository = "https://github.com/levish0/nanachi"
+repository = "https://github.com/levish0/faputa"
 description = "A stateful parser generator."
 edition = "2024"
 rust-version = "1.93.0"
@@ -16,12 +16,12 @@ readme = "README.md"
 
 [workspace.dependencies]
 # Internal crates
-nanachi = { path = "crates/nanachi", version = "0.1.4" }
-nanachi_meta = { path = "crates/meta", version = "0.1.4" }
-nanachi_generator = { path = "crates/generator", version = "0.1.4" }
-nanachi_derive = { path = "crates/derive", version = "0.1.4" }
-nanachi_vm = { path = "crates/vm", version = "0.1.4" }
-nanachi_debugger = { path = "crates/debugger", version = "0.1.4" }
+faputa = { path = "crates/faputa", version = "0.1.4" }
+faputa_meta = { path = "crates/meta", version = "0.1.4" }
+faputa_generator = { path = "crates/generator", version = "0.1.4" }
+faputa_derive = { path = "crates/derive", version = "0.1.4" }
+faputa_vm = { path = "crates/vm", version = "0.1.4" }
+faputa_debugger = { path = "crates/debugger", version = "0.1.4" }
 
 # External dependencies
 winnow = { version = "1.0.1", features = ["simd"] }

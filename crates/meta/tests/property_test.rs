@@ -1,4 +1,4 @@
-use nanachi_meta::{compile, parser, validator};
+use faputa_meta::{compile, parser, validator};
 use proptest::prelude::*;
 
 fn escape_string(chars: &[char]) -> String {

@@ -1,5 +1,5 @@
-use nanachi_meta::ast::*;
-use nanachi_meta::parser;
+use faputa_meta::ast::*;
+use faputa_meta::parser;
 
 fn workspace_root() -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -9,14 +9,14 @@ fn workspace_root() -> std::path::PathBuf {
 }
 
 fn parse_fixture(name: &str) -> Grammar {
-    let path = workspace_root().join(format!("fixtures/valid/{name}.nanachi"));
+    let path = workspace_root().join(format!("fixtures/valid/{name}.faputa"));
     let path = path.display().to_string();
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     parser::parse(&source).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
-fn parse_invalid_fixture(name: &str) -> nanachi_meta::parser::ParseError {
-    let path = workspace_root().join(format!("fixtures/syntax_invalid/{name}.nanachi"));
+fn parse_invalid_fixture(name: &str) -> faputa_meta::parser::ParseError {
+    let path = workspace_root().join(format!("fixtures/syntax_invalid/{name}.faputa"));
     let path = path.display().to_string();
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     parser::parse(&source).unwrap_err()

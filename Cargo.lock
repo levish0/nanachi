@@ -333,8 +333,90 @@ dependencies = [
 name = "error_labels"
 version = "0.0.0"
 dependencies = [
- "nanachi",
- "nanachi_derive",
+ "faputa",
+ "faputa_derive",
+]
+
+[[package]]
+name = "faputa"
+version = "0.1.4"
+dependencies = [
+ "memchr",
+ "winnow",
+]
+
+[[package]]
+name = "faputa_debugger"
+version = "0.1.4"
+dependencies = [
+ "faputa",
+ "faputa_meta",
+ "faputa_vm",
+]
+
+[[package]]
+name = "faputa_derive"
+version = "0.1.4"
+dependencies = [
+ "faputa",
+ "faputa_derive",
+ "faputa_generator",
+ "faputa_meta",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "trybuild",
+]
+
+[[package]]
+name = "faputa_e2e_tests"
+version = "0.0.0"
+dependencies = [
+ "faputa",
+ "faputa_generator",
+ "faputa_meta",
+ "prettyplease",
+ "syn",
+]
+
+[[package]]
+name = "faputa_fuzz"
+version = "0.0.0"
+dependencies = [
+ "faputa_meta",
+ "libfuzzer-sys",
+]
+
+[[package]]
+name = "faputa_generator"
+version = "0.1.4"
+dependencies = [
+ "faputa",
+ "faputa_meta",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "faputa_meta"
+version = "0.1.4"
+dependencies = [
+ "faputa",
+ "logos",
+ "proptest",
+ "tracing",
+]
+
+[[package]]
+name = "faputa_vm"
+version = "0.1.4"
+dependencies = [
+ "faputa",
+ "faputa_meta",
 ]
 
 [[package]]
@@ -498,8 +580,8 @@ name = "json_bench"
 version = "0.0.0"
 dependencies = [
  "criterion",
- "nanachi",
- "nanachi_derive",
+ "faputa",
+ "faputa_derive",
  "pest",
  "pest_derive",
  "serde_json",
@@ -593,88 +675,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
-name = "nanachi"
-version = "0.1.4"
-dependencies = [
- "memchr",
- "winnow",
-]
-
-[[package]]
-name = "nanachi_debugger"
-version = "0.1.4"
-dependencies = [
- "nanachi",
- "nanachi_meta",
- "nanachi_vm",
-]
-
-[[package]]
-name = "nanachi_derive"
-version = "0.1.4"
-dependencies = [
- "nanachi",
- "nanachi_derive",
- "nanachi_generator",
- "nanachi_meta",
- "proc-macro2",
- "quote",
- "syn",
- "trybuild",
-]
-
-[[package]]
-name = "nanachi_e2e_tests"
-version = "0.0.0"
-dependencies = [
- "nanachi",
- "nanachi_generator",
- "nanachi_meta",
- "prettyplease",
- "syn",
-]
-
-[[package]]
-name = "nanachi_fuzz"
-version = "0.0.0"
-dependencies = [
- "libfuzzer-sys",
- "nanachi_meta",
-]
-
-[[package]]
-name = "nanachi_generator"
-version = "0.1.4"
-dependencies = [
- "nanachi",
- "nanachi_meta",
- "prettyplease",
- "proc-macro2",
- "quote",
- "syn",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "nanachi_meta"
-version = "0.1.4"
-dependencies = [
- "logos",
- "nanachi",
- "proptest",
- "tracing",
-]
-
-[[package]]
-name = "nanachi_vm"
-version = "0.1.4"
-dependencies = [
- "nanachi",
- "nanachi_meta",
-]
-
-[[package]]
 name = "nu-ansi-term"
 version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -724,16 +724,16 @@ dependencies = [
 name = "parse_demo"
 version = "0.0.0"
 dependencies = [
- "nanachi",
- "nanachi_derive",
+ "faputa",
+ "faputa_derive",
 ]
 
 [[package]]
 name = "parse_json"
 version = "0.0.0"
 dependencies = [
- "nanachi",
- "nanachi_derive",
+ "faputa",
+ "faputa_derive",
 ]
 
 [[package]]

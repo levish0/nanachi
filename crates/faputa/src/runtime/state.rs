@@ -1,4 +1,4 @@
-/// Trait that all nanachi-generated state structs implement.
+/// Trait that all faputa-generated state structs implement.
 ///
 /// The generator creates a concrete struct (e.g. `ParseState`) with fields
 /// for each `let flag` / `let counter` declaration in the grammar, and

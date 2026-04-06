@@ -23,4 +23,4 @@ jobs:
         run: cargo test --workspace
 
       - name: Check Fuzz Targets
-        run: cargo check -p nanachi_fuzz --bins --features fuzzing
+        run: cargo check -p faputa_fuzz --bins --features fuzzing
