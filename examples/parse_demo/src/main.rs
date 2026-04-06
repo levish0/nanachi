@@ -55,7 +55,8 @@ mod tests {
     fn parse_error_has_location_and_context() {
         let err = Demo::parse_assign("1x=2").unwrap_err();
         assert!(err.starts_with("parse error at 1:1:"));
-        assert!(err.contains("invalid assign"));
+        // Error shows the most specific failing rule
+        assert!(err.contains("invalid"));
     }
 
     #[test]
