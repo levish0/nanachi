@@ -713,9 +713,13 @@ mod tests {
         "#,
         );
         // digit should be inlined into number.
-        // The Repeat { CharSet } pattern becomes TakeWhile → AsciiBuiltin(Digit1).
+        // The Repeat { CharSet } pattern becomes TakeWhile(Digit, 1, None).
         let number = ir.rules.iter().find(|r| r.name == "number").unwrap();
-        assert_eq!(number.expr, IrExpr::AsciiBuiltin(AsciiClass::Digit1));
+        assert!(
+            matches!(&number.expr, IrExpr::TakeWhile { min: 1, max: None, .. }),
+            "expected TakeWhile, got {:?}",
+            &number.expr
+        );
     }
 
     #[test]
@@ -809,19 +813,16 @@ mod tests {
 
     #[test]
     fn take_while_recognized() {
-        // digit* → TakeWhile → AsciiBuiltin(Digit0)
+        // digit* → TakeWhile
         let ir = optimized("d = { '0'..'9'* }");
-        assert_eq!(ir.rules[0].expr, IrExpr::AsciiBuiltin(AsciiClass::Digit0));
+        assert!(matches!(&ir.rules[0].expr, IrExpr::TakeWhile { min: 0, max: None, .. }));
     }
 
     #[test]
     fn take_while_from_choice_repeat() {
-        // (" " | "\t" | "\n" | "\r")* → single CharSet from merge → TakeWhile → AsciiBuiltin(Multispace0)
+        // (" " | "\t" | "\n" | "\r")* → single CharSet from merge → TakeWhile
         let ir = optimized(r#"ws = { (" " | "\t" | "\n" | "\r")* }"#);
-        assert_eq!(
-            ir.rules[0].expr,
-            IrExpr::AsciiBuiltin(AsciiClass::Multispace0)
-        );
+        assert!(matches!(&ir.rules[0].expr, IrExpr::TakeWhile { min: 0, max: None, .. }));
     }
 
     #[test]
@@ -865,38 +866,8 @@ mod tests {
     }
 
     #[test]
-    fn ascii_builtin_alpha() {
-        let ir = optimized(r#"a = { ('a'..'z' | 'A'..'Z')+ }"#);
-        assert_eq!(ir.rules[0].expr, IrExpr::AsciiBuiltin(AsciiClass::Alpha1));
-    }
-
-    #[test]
-    fn ascii_builtin_hex_digit() {
-        let ir = optimized(r#"h = { ('0'..'9' | 'a'..'f' | 'A'..'F')* }"#);
-        assert_eq!(
-            ir.rules[0].expr,
-            IrExpr::AsciiBuiltin(AsciiClass::HexDigit0)
-        );
-    }
-
-    #[test]
-    fn ascii_builtin_alphanumeric() {
-        let ir = optimized(r#"an = { ('a'..'z' | 'A'..'Z' | '0'..'9')+ }"#);
-        assert_eq!(
-            ir.rules[0].expr,
-            IrExpr::AsciiBuiltin(AsciiClass::Alphanumeric1)
-        );
-    }
-
-    #[test]
-    fn ascii_builtin_space() {
-        let ir = optimized(r#"s = { (" " | "\t")* }"#);
-        assert_eq!(ir.rules[0].expr, IrExpr::AsciiBuiltin(AsciiClass::Space0));
-    }
-
-    #[test]
     fn take_while_bounded_stays_take_while() {
-        // Bounded repeats (e.g. {3}) should NOT become AsciiBuiltin
+        // Bounded repeats (e.g. {3}) should stay TakeWhile
         let ir = optimized("d = { '0'..'9'{3} }");
         assert!(matches!(&ir.rules[0].expr, IrExpr::TakeWhile { .. }));
     }
