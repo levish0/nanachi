@@ -1,0 +1,34 @@
+// Demonstrating @ error labels for user-friendly parse errors.
+//
+// Rule-level label:     rule = @ "human name" { ... }
+// Expression-level label:  expr @ "description"
+//
+// Without @, only the rule name appears in errors.
+// With @, you control exactly what the user sees.
+
+// Basic building blocks
+digit  = { '0'..'9' }
+alpha  = { 'a'..'z' | 'A'..'Z' }
+
+// Rule-level label: when `ident` fails, error says "identifier" instead of "ident"
+ident = @ "identifier" { alpha (alpha | digit | "_")* }
+
+// Rule-level label on number
+number = @ "number" { digit+ ("." digit+)? }
+
+// Expression-level labels on individual choices
+value = @ "value" {
+    number @ "a number"
+  | ident  @ "an identifier"
+  | string @ "a quoted string"
+}
+
+// String with expression-level label on escape sequences
+string_char = { "\\" ANY @ "escape character" | (!("\"") ANY) }
+string = @ "string" { "\"" string_char* "\"" }
+
+// Assignment with expression-level label on the operator
+assign = { ident "=" @ "equals sign" value }
+
+// Entry point
+program = { SOI assign EOI }
