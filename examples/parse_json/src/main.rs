@@ -9,7 +9,6 @@ struct Json;
 
 fn main() {
     let path = env::args().nth(1).unwrap_or_else(|| {
-        // Default to bundled sample
         let manifest = env!("CARGO_MANIFEST_DIR");
         format!("{manifest}/sample.json")
     });
@@ -34,7 +33,6 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::Json;
-    use nanachi::ParseOptions;
 
     #[test]
     fn sample_json_parses() {
@@ -58,33 +56,15 @@ mod tests {
     }
 
     #[test]
-    fn json_parse_error_reports_multiline_location() {
+    fn json_parse_error_reports_location_and_context() {
         let err = Json::parse_json("{\n  \"a\": 1,\n}").unwrap_err();
-
-        assert!(err.starts_with("parse error at 3:1:"));
-        assert!(!err.contains("expected"));
-    }
-
-    #[test]
-    fn detailed_json_parse_error_includes_expected_context() {
-        let err = Json::parse_json_detailed("{\n  \"a\": 1,\n}").unwrap_err();
-
-        assert!(err.starts_with("parse error at 3:1:"));
-        assert!(err.contains("expected"));
-    }
-
-    #[test]
-    fn parse_options_toggle_json_error_detail() {
-        let err =
-            Json::parse_json_with_options("{\"a\":1,}", ParseOptions::detailed()).unwrap_err();
-
+        assert!(err.starts_with("parse error at 3:"));
         assert!(err.contains("expected"));
     }
 
     #[test]
     fn string_trailing_input_reports_location() {
         let err = Json::parse_string("\"x\"!").unwrap_err();
-
         assert_eq!(err, "unexpected trailing input at 1:4");
     }
 

@@ -50,13 +50,11 @@ fn generates_string_literal() {
 }
 
 #[test]
-fn generates_runtime_detailed_error_entrypoints() {
+fn generates_error_context() {
     let code = generate_code(r#"hello = { "hello" }"#);
-    assert!(code.contains("parse_hello_with_options"));
-    assert!(code.contains("parse_hello_detailed"));
-    assert!(code.contains("fn __nanachi_detailed_hello"));
+    assert!(code.contains("parse_hello"));
+    assert!(code.contains("StrContext"));
     assert!(code.contains("StringLiteral (\"hello\")"));
-    assert!(!code.contains("maybe_context"));
 }
 
 #[test]
