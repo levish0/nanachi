@@ -70,7 +70,7 @@ fn generate_entry(ir: &IrProgram) -> TokenStream {
                         input: faputa::LocatingSlice::new(source),
                         state,
                     };
-                    let matched = #rule_fn.parse_next(&mut input)
+                    let matched = #rule_fn.take().parse_next(&mut input)
                         .map_err(|e| {
                             let offset = input.state.furthest_pos();
                             let line_index = LineIndex::new(source);

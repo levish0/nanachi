@@ -1,6 +1,7 @@
 mod gen_data;
 
 use criterion::{Criterion, criterion_group, criterion_main};
+use json_bench::manual_winnow;
 
 // ── faputa ──
 use faputa_derive::Parser;
@@ -21,6 +22,7 @@ fn bench_json(c: &mut Criterion) {
 
     // Sanity checks
     FaputaJson::parse_json(&data).expect("faputa failed");
+    manual_winnow::parse_json(&data).expect("manual winnow failed");
     PestJson::parse(Rule::json, &data).expect("pest failed");
     serde_json::from_str::<serde_json::Value>(&data).expect("serde_json failed");
 
@@ -28,6 +30,10 @@ fn bench_json(c: &mut Criterion) {
 
     group.bench_function("faputa", |b| {
         b.iter(|| FaputaJson::parse_json(std::hint::black_box(&data)).unwrap())
+    });
+
+    group.bench_function("winnow_manual", |b| {
+        b.iter(|| manual_winnow::parse_json(std::hint::black_box(&data)).unwrap())
     });
 
     group.bench_function("pest", |b| {

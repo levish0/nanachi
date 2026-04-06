@@ -1,5 +1,5 @@
 use faputa_meta::ast::{BuiltinPredicate, CompareOp, GuardCondition};
-use faputa_meta::ir::{Boundary, CharRange, IrExpr, IrProgram};
+use faputa_meta::ir::{Boundary, CharRange, DispatchArm, IrExpr, IrProgram};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -70,6 +70,8 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
                 .collect();
             generate_alt(codes)
         }
+
+        IrExpr::Dispatch(arms) => generate_dispatch(arms, ir),
 
         IrExpr::Repeat { expr, min, max } => generate_repeat(expr, *min, *max, ir),
 
@@ -214,7 +216,12 @@ fn generate_range_tuple(ranges: &[CharRange]) -> TokenStream {
 /// Generate a closure for char matching when ranges exceed tuple limit.
 /// e.g., `|c: char| matches!(c, 'a'..='z' | 'A'..='Z' | '_')`
 fn generate_char_match_closure(ranges: &[CharRange]) -> TokenStream {
-    let patterns: Vec<_> = ranges
+    let patterns = generate_match_patterns(ranges);
+    quote! { |c: char| matches!(c, #(#patterns)|*) }
+}
+
+fn generate_match_patterns(ranges: &[CharRange]) -> Vec<TokenStream> {
+    ranges
         .iter()
         .map(|r| {
             if r.start == r.end {
@@ -226,8 +233,7 @@ fn generate_char_match_closure(ranges: &[CharRange]) -> TokenStream {
                 quote! { #start..=#end }
             }
         })
-        .collect();
-    quote! { |c: char| matches!(c, #(#patterns)|*) }
+        .collect()
 }
 
 fn generate_boundary(boundary: &Boundary) -> TokenStream {
@@ -288,6 +294,30 @@ fn generate_repeat(expr: &IrExpr, min: u32, max: Option<u32>, ir: &IrProgram) ->
         quote! { opt(#inner) }
     } else {
         quote! { repeat(#range, #inner)#fold }
+    }
+}
+
+fn generate_dispatch(arms: &[DispatchArm], ir: &IrProgram) -> TokenStream {
+    let arms: Vec<_> = arms
+        .iter()
+        .map(|arm| {
+            let patterns = generate_match_patterns(&arm.ranges);
+            let body = generate_expr(&arm.expr, ir);
+            quote! {
+                Some(ch) if matches!(ch, #(#patterns)|*) => (#body).void().parse_next(input),
+            }
+        })
+        .collect();
+
+    quote! {
+        (|input: &mut Input<'i, ParseState<'i>>| -> ModalResult<()> {
+            match input.input.chars().next() {
+                #(#arms)*
+                _ => Err(winnow::error::ErrMode::Backtrack(
+                    winnow::error::ContextError::new(),
+                )),
+            }
+        })
     }
 }
 

@@ -34,6 +34,12 @@ pub enum IrExpr {
     /// Ordered choice: try each in order, backtrack on failure.
     Choice(Vec<IrExpr>),
 
+    /// Deterministic choice lowered to a single-character dispatch table.
+    ///
+    /// Each arm owns a disjoint set of starting characters, allowing codegen to
+    /// branch directly instead of paying generic `alt(...)` backtracking costs.
+    Dispatch(Vec<DispatchArm>),
+
     /// Repetition with bounds.
     /// `*` = (0, None), `+` = (1, None), `?` = (0, Some(1)),
     /// `{n}` = (n, Some(n)), `{n,m}` = (n, Some(m))
@@ -100,6 +106,13 @@ impl CharRange {
     pub fn single(ch: char) -> Self {
         Self { start: ch, end: ch }
     }
+}
+
+/// A single arm in a deterministic dispatch table.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DispatchArm {
+    pub ranges: Vec<CharRange>,
+    pub expr: Box<IrExpr>,
 }
 
 /// Zero-width position assertion.
