@@ -672,17 +672,19 @@ mod tests {
     }
 
     #[test]
-    fn dead_inlined_rule_eliminated() {
+    fn inlined_rules_kept_with_inline_flag() {
         let ir = optimized(
             r#"
             digit = { '0'..'9' }
             number = { digit+ }
         "#,
         );
-        // digit is trivial, inlined, and only referenced by number.
-        // After inlining, digit should be removed.
-        assert_eq!(ir.rules.len(), 1);
-        assert_eq!(ir.rules[0].name, "number");
+        // digit is trivial and inlined into number, but kept for entry-point access.
+        assert_eq!(ir.rules.len(), 2);
+        let digit = ir.rules.iter().find(|r| r.name == "digit").unwrap();
+        assert!(digit.inline);
+        let number = ir.rules.iter().find(|r| r.name == "number").unwrap();
+        assert!(!number.inline);
     }
 
     #[test]
@@ -694,8 +696,8 @@ mod tests {
             ident = { alpha (alpha | digit)* }
         "#,
         );
-        // alpha and digit are trivial → inlined and eliminated.
-        // ident should remain with CharSet + TakeWhile (from the merged repeat).
+        // alpha and digit are trivial → inlined but kept.
+        // ident should have CharSet + TakeWhile (from the merged repeat).
         let ident = ir.rules.iter().find(|r| r.name == "ident").unwrap();
         match &ident.expr {
             IrExpr::Seq(items) => {

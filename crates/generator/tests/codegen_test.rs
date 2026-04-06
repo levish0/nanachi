@@ -54,7 +54,8 @@ fn generates_error_context() {
     let code = generate_code(r#"hello = { "hello" }"#);
     assert!(code.contains("parse_hello"));
     assert!(code.contains("StrContext"));
-    assert!(code.contains("StringLiteral (\"hello\")"));
+    // Entry-point rule gets Label context (not per-terminal Expected)
+    assert!(code.contains("Label (\"hello\")"));
 }
 
 #[test]
@@ -66,15 +67,15 @@ fn generates_char_range() {
 #[test]
 fn generates_sequence() {
     let code = generate_code(r#"pair = { "a" "b" }"#);
-    // Sequence generates a tuple: (literal("a"), literal("b"))
-    assert!(code.contains(r#"literal ("a")"#));
-    assert!(code.contains(r#"literal ("b")"#));
+    // Adjacent single-char literals get fused into one literal "ab"
+    assert!(code.contains(r#"literal ("ab")"#));
 }
 
 #[test]
 fn generates_choice() {
     let code = generate_code(r#"ab = { "a" | "b" }"#);
-    assert!(code.contains("alt"));
+    // Single-char choices are merged into a single CharSet → one_of
+    assert!(code.contains("one_of"));
 }
 
 #[test]
@@ -124,7 +125,7 @@ fn generates_with_flag_code() {
     "#,
     );
     assert!(code.contains("set_flag"));
-    assert!(code.contains("with_flag"));
+    assert!(code.contains("get_flag"));
 }
 
 #[test]
@@ -185,8 +186,8 @@ fn generates_depth_limit_code() {
         }
     "#,
     );
-    assert!(code.contains("depth_limit"));
     assert!(code.contains("__recursion_depth"));
+    assert!(code.contains("64"));
 }
 
 #[test]
@@ -211,7 +212,8 @@ fn generates_builtin_exprs() {
         anything = { ANY }
     "#,
     );
-    assert!(code.contains("SOI"));
+    // SOI is now a closure checking position == 0
+    assert!(code.contains("current_token_start () == 0"));
     assert!(code.contains("eof"));
     assert!(code.contains("any"));
 }

@@ -61,7 +61,7 @@ fn fixture_depth_and_braces() {
     let code = generate_fixture("depth_and_braces");
     assert_valid_rust(&code, "depth_and_braces");
     assert!(code.contains("fn document"));
-    assert!(code.contains("depth_limit"));
+    assert!(code.contains("__recursion_depth"));
 }
 
 #[test]
