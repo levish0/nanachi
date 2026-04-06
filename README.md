@@ -163,6 +163,17 @@ compilation internals:
 RUST_LOG=debug cargo run -p parse_json -- file.json
 ```
 
+## Publishing
+
+```sh
+cargo xtask publish-dry  # Dry run
+cargo xtask publish      # Publish to crates.io
+```
+
+Crates are published in dependency order with automatic index sync delays:
+
+`faputa` → `faputa_meta` → `faputa_generator` → `faputa_derive`
+
 ## License
 
 [Apache-2.0](LICENSE)
