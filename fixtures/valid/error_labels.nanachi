@@ -1,0 +1,29 @@
+// Grammar demonstrating custom error labels with @ syntax.
+//
+// Rule-level label: overrides "invalid <rule>" in error messages.
+// Expression-level label: overrides auto-generated "expected ..." descriptions.
+
+// Rule-level: error says "invalid JSON value" instead of "invalid value"
+value = @ "JSON value" {
+    object @ "object"
+    | array @ "array"
+    | string @ "string literal"
+    | number @ "number"
+    | "true" @ "true"
+    | "false" @ "false"
+    | "null" @ "null"
+}
+
+// Expression-level labels on individual terms
+alpha  = { 'a'..'z' | 'A'..'Z' }
+digit  = { '0'..'9' }
+ident  = { (alpha @ "letter") (alpha | digit)* }
+number = { digit+ }
+string = { "\"" (!(("\"") | ("\\")) ANY)* "\"" }
+
+// Labels can go on grouped expressions
+object = { "{" "}" }
+array  = { "[" "]" }
+
+// Labels on repeat expressions
+digits = { digit+ @ "one or more digits" }

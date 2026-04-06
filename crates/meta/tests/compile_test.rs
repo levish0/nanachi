@@ -42,11 +42,11 @@ fn compile_valid_dirty_fixture() {
 
 #[test]
 fn compile_reports_parse_errors_before_validation() {
-    let err = compile(r#"entry = { "x" @ "y" }"#).unwrap_err();
+    let err = compile(r#"entry = { "x" $ }"#).unwrap_err();
     match err {
         CompileError::Parse(parse_err) => {
             assert_eq!(parse_err.offset, 14);
-            assert!(parse_err.message.contains("unexpected character '@'"));
+            assert!(parse_err.message.contains("unexpected character '$'"));
         }
         other => panic!("expected parse error, got {other:?}"),
     }

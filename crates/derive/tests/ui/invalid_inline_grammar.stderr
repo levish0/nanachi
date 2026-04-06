@@ -1,4 +1,4 @@
-error: nanachi compile error: Parse(ParseError { message: "unexpected character '@'", offset: 13 })
+error: nanachi compile error: Parse(ParseError { message: "unexpected character '$'", offset: 13 })
  --> tests/ui/invalid_inline_grammar.rs:5:8
   |
 5 | struct InvalidInlineGrammar;
