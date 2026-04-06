@@ -13,10 +13,18 @@ build-script codegen:
 ```rust
 use faputa_meta::compile;
 use faputa_generator::generate;
+use std::path::Path;
 
 let grammar = compile("number = { '0'..'9'+ }").unwrap();
-let code: String = generate(&grammar);
-// Write `code` to a file in your build script
+let tokens = generate(&grammar);
+
+let code = match syn::parse2::<syn::File>(tokens.clone()) {
+    Ok(file) => prettyplease::unparse(&file),
+    Err(_) => tokens.to_string(),
+};
+
+let out_file = Path::new(&std::env::var("OUT_DIR").unwrap()).join("grammar.rs");
+std::fs::write(&out_file, code).unwrap();
 ```
 
 - **`generate()`** — produces a `pub mod` with `parse_<rule>()` entry points
