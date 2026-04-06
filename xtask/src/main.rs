@@ -8,9 +8,7 @@ const CRATES: &[&str] = &[
     "faputa",
     "faputa_meta",
     "faputa_generator",
-    "faputa_vm",
     "faputa_derive",
-    "faputa_debugger",
 ];
 
 fn main() {
