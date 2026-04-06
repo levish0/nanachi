@@ -34,8 +34,7 @@ pub(crate) fn generate_expr(expr: &IrExpr, ir: &IrProgram) -> TokenStream {
                 .iter()
                 .map(|e| {
                     let code = generate_expr(e, ir);
-                    let desc = describe_expr(e, ir);
-                    quote! { (#code).void().context(StrContext::Expected(StrContextValue::Description(#desc))) }
+                    quote! { (#code).void() }
                 })
                 .collect();
             generate_alt(codes)
@@ -323,46 +322,4 @@ fn generate_alt(items: Vec<TokenStream>) -> TokenStream {
             .collect();
         generate_alt(chunks)
     }
-}
-
-/// Produce a human-readable description of an IR expression for error messages.
-/// Used on Choice branches to generate `Expected(Description(...))`.
-fn describe_expr(expr: &IrExpr, ir: &IrProgram) -> String {
-    match expr {
-        // User-provided label takes absolute precedence.
-        IrExpr::Labeled { label, .. } => label.clone(),
-        IrExpr::Literal(s) => format!("\"{}\"", s.escape_default()),
-        IrExpr::CharSet(ranges) => describe_ranges(ranges),
-        IrExpr::Any => "any character".to_string(),
-        IrExpr::Boundary(b) => match b {
-            Boundary::Soi => "start of input".to_string(),
-            Boundary::Eoi => "end of input".to_string(),
-            Boundary::LineStart => "start of line".to_string(),
-            Boundary::LineEnd => "end of line".to_string(),
-        },
-        IrExpr::RuleRef(idx) => ir.rules[*idx].name.clone(),
-        IrExpr::TakeWhile { ranges, .. } => describe_ranges(ranges),
-        // For compound expressions, describe the outermost structure
-        IrExpr::Seq(items) if !items.is_empty() => describe_expr(&items[0], ir),
-        _ => "...".to_string(),
-    }
-}
-
-/// Human-readable description of a set of char ranges.
-fn describe_ranges(ranges: &[CharRange]) -> String {
-    let parts: Vec<String> = ranges
-        .iter()
-        .map(|r| {
-            if r.start == r.end {
-                format!("'{}'", r.start.escape_default())
-            } else {
-                format!(
-                    "'{}'..'{}'",
-                    r.start.escape_default(),
-                    r.end.escape_default()
-                )
-            }
-        })
-        .collect();
-    parts.join(" | ")
 }
