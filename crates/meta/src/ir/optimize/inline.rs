@@ -36,6 +36,48 @@ pub(super) fn inline_trivial_rules(mut program: IrProgram) -> IrProgram {
     program
 }
 
+pub(super) fn inline_small_single_use_rules(mut program: IrProgram) -> IrProgram {
+    let mut ref_counts = vec![0usize; program.rules.len()];
+    for rule in &program.rules {
+        count_raw_refs(&rule.expr, &mut ref_counts);
+    }
+
+    let inline_set: HashSet<usize> = program
+        .rules
+        .iter()
+        .enumerate()
+        .filter(|(i, rule)| {
+            ref_counts[*i] == 1
+                && is_small_inline_candidate(rule)
+                && !contains_rule_ref(&rule.expr, *i)
+        })
+        .map(|(i, _)| i)
+        .collect();
+
+    if inline_set.is_empty() {
+        return program;
+    }
+
+    for (i, rule) in program.rules.iter_mut().enumerate() {
+        if inline_set.contains(&i) {
+            rule.inline = true;
+            tracing::trace!(rule = %rule.name, "inline_small_single_use_rules: marked for inlining");
+        }
+    }
+
+    let inline_exprs: Vec<Option<IrExpr>> = program
+        .rules
+        .iter()
+        .map(|r| if r.inline { Some(r.expr.clone()) } else { None })
+        .collect();
+
+    for rule in &mut program.rules {
+        rule.expr = inline_refs(rule.expr.clone(), &inline_exprs);
+    }
+
+    program
+}
+
 fn is_trivial(rule: &IrRule) -> bool {
     if !rule.guards.is_empty() || !rule.emits.is_empty() {
         return false;
@@ -49,6 +91,93 @@ fn is_trivial(rule: &IrRule) -> bool {
             | IrExpr::TakeWhile { .. }
             | IrExpr::Scan { .. }
     )
+}
+
+fn is_small_inline_candidate(rule: &IrRule) -> bool {
+    if !rule.guards.is_empty() || !rule.emits.is_empty() || rule.error_label.is_some() {
+        return false;
+    }
+
+    estimate_cost(&rule.expr) <= 14
+}
+
+fn estimate_cost(expr: &IrExpr) -> usize {
+    match expr {
+        IrExpr::Literal(_) | IrExpr::CharSet(_) | IrExpr::Any | IrExpr::Boundary(_) => 1,
+        IrExpr::RuleRef(_) => 1,
+        IrExpr::Seq(items) | IrExpr::Choice(items) => {
+            1 + items.iter().map(estimate_cost).sum::<usize>()
+        }
+        IrExpr::Dispatch(arms) => {
+            1 + arms.iter().map(|arm| estimate_cost(&arm.expr)).sum::<usize>()
+        }
+        IrExpr::Repeat { expr, .. }
+        | IrExpr::PosLookahead(expr)
+        | IrExpr::NegLookahead(expr)
+        | IrExpr::Labeled { expr, .. } => 1 + estimate_cost(expr),
+        IrExpr::WithFlag { body, .. }
+        | IrExpr::WithCounter { body, .. }
+        | IrExpr::When { body, .. }
+        | IrExpr::DepthLimit { body, .. } => usize::MAX / 4,
+        IrExpr::TakeWhile { .. } => 1,
+        IrExpr::Scan { specials, .. } => {
+            1 + specials.iter().map(|arm| estimate_cost(&arm.expr)).sum::<usize>()
+        }
+    }
+}
+
+fn contains_rule_ref(expr: &IrExpr, needle: usize) -> bool {
+    match expr {
+        IrExpr::RuleRef(idx) => *idx == needle,
+        IrExpr::Seq(items) | IrExpr::Choice(items) => {
+            items.iter().any(|item| contains_rule_ref(item, needle))
+        }
+        IrExpr::Dispatch(arms) => arms.iter().any(|arm| contains_rule_ref(&arm.expr, needle)),
+        IrExpr::Repeat { expr, .. }
+        | IrExpr::PosLookahead(expr)
+        | IrExpr::NegLookahead(expr)
+        | IrExpr::WithFlag { body: expr, .. }
+        | IrExpr::WithCounter { body: expr, .. }
+        | IrExpr::When { body: expr, .. }
+        | IrExpr::DepthLimit { body: expr, .. }
+        | IrExpr::Labeled { expr, .. } => contains_rule_ref(expr, needle),
+        IrExpr::Scan { specials, .. } => specials
+            .iter()
+            .any(|arm| contains_rule_ref(&arm.expr, needle)),
+        _ => false,
+    }
+}
+
+fn count_raw_refs(expr: &IrExpr, counts: &mut [usize]) {
+    match expr {
+        IrExpr::RuleRef(idx) => {
+            counts[*idx] += 1;
+        }
+        IrExpr::Seq(items) | IrExpr::Choice(items) => {
+            for item in items {
+                count_raw_refs(item, counts);
+            }
+        }
+        IrExpr::Dispatch(arms) => {
+            for arm in arms {
+                count_raw_refs(&arm.expr, counts);
+            }
+        }
+        IrExpr::Repeat { expr, .. }
+        | IrExpr::PosLookahead(expr)
+        | IrExpr::NegLookahead(expr)
+        | IrExpr::WithFlag { body: expr, .. }
+        | IrExpr::WithCounter { body: expr, .. }
+        | IrExpr::When { body: expr, .. }
+        | IrExpr::DepthLimit { body: expr, .. }
+        | IrExpr::Labeled { expr, .. } => count_raw_refs(expr, counts),
+        IrExpr::Scan { specials, .. } => {
+            for arm in specials {
+                count_raw_refs(&arm.expr, counts);
+            }
+        }
+        _ => {}
+    }
 }
 
 fn inline_refs(expr: IrExpr, inline_exprs: &[Option<IrExpr>]) -> IrExpr {

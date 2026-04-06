@@ -30,6 +30,13 @@ pub fn optimize(program: IrProgram) -> IrProgram {
     let program = normalize::fuse_literals(program);
     tracing::debug!("phase 3 (re-normalize) complete");
 
+    // Phase 3b: Inline small single-use helper rules and normalize again
+    let program = inline::inline_small_single_use_rules(program);
+    let program = normalize::flatten(program);
+    let program = normalize::merge_charsets(program);
+    let program = normalize::fuse_literals(program);
+    tracing::debug!("phase 3b (small-rule inline) complete");
+
     // Phase 4: Recognize fused patterns
     let program = patterns::recognize_take_while(program);
     tracing::debug!("phase 4 (pattern recognition) complete");
