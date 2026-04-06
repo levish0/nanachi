@@ -5,10 +5,8 @@
 
 use std::collections::HashMap;
 
-use crate::ast::{
-    self, BuiltinPredicate, Expr, Grammar, Item, RepeatKind, Statement,
-};
 use super::{Boundary, CharRange, IrExpr, IrProgram, IrRule};
+use crate::ast::{self, BuiltinPredicate, Expr, Grammar, Item, RepeatKind, Statement};
 
 /// Lower a validated AST Grammar to an IR Program.
 ///
@@ -67,6 +65,7 @@ fn lower_rule(rule: &ast::RuleDef, indices: &HashMap<&str, usize>) -> IrRule {
         guards,
         emits,
         expr,
+        ref_count: 0,
     }
 }
 
@@ -74,9 +73,7 @@ fn lower_expr(expr: &Expr, indices: &HashMap<&str, usize>) -> IrExpr {
     match expr {
         Expr::StringLit(s) => IrExpr::Literal(s.clone()),
 
-        Expr::CharRange(start, end) => {
-            IrExpr::CharSet(vec![CharRange::new(*start, *end)])
-        }
+        Expr::CharRange(start, end) => IrExpr::CharSet(vec![CharRange::new(*start, *end)]),
 
         Expr::Ident(name) => {
             let index = indices[name.as_str()];
@@ -120,13 +117,9 @@ fn lower_expr(expr: &Expr, indices: &HashMap<&str, usize>) -> IrExpr {
             }
         }
 
-        Expr::PosLookahead(inner) => {
-            IrExpr::PosLookahead(Box::new(lower_expr(inner, indices)))
-        }
+        Expr::PosLookahead(inner) => IrExpr::PosLookahead(Box::new(lower_expr(inner, indices))),
 
-        Expr::NegLookahead(inner) => {
-            IrExpr::NegLookahead(Box::new(lower_expr(inner, indices)))
-        }
+        Expr::NegLookahead(inner) => IrExpr::NegLookahead(Box::new(lower_expr(inner, indices))),
 
         // Group is purely syntactic — unwrap.
         Expr::Group(inner) => lower_expr(inner, indices),
@@ -215,11 +208,46 @@ mod tests {
         let ir = lower_source(r#"r = { "a"+ "b"* "c"? "d"{3} "e"{1,5} }"#);
         match &ir.rules[0].expr {
             IrExpr::Seq(items) => {
-                assert!(matches!(&items[0], IrExpr::Repeat { min: 1, max: None, .. }));
-                assert!(matches!(&items[1], IrExpr::Repeat { min: 0, max: None, .. }));
-                assert!(matches!(&items[2], IrExpr::Repeat { min: 0, max: Some(1), .. }));
-                assert!(matches!(&items[3], IrExpr::Repeat { min: 3, max: Some(3), .. }));
-                assert!(matches!(&items[4], IrExpr::Repeat { min: 1, max: Some(5), .. }));
+                assert!(matches!(
+                    &items[0],
+                    IrExpr::Repeat {
+                        min: 1,
+                        max: None,
+                        ..
+                    }
+                ));
+                assert!(matches!(
+                    &items[1],
+                    IrExpr::Repeat {
+                        min: 0,
+                        max: None,
+                        ..
+                    }
+                ));
+                assert!(matches!(
+                    &items[2],
+                    IrExpr::Repeat {
+                        min: 0,
+                        max: Some(1),
+                        ..
+                    }
+                ));
+                assert!(matches!(
+                    &items[3],
+                    IrExpr::Repeat {
+                        min: 3,
+                        max: Some(3),
+                        ..
+                    }
+                ));
+                assert!(matches!(
+                    &items[4],
+                    IrExpr::Repeat {
+                        min: 1,
+                        max: Some(5),
+                        ..
+                    }
+                ));
             }
             other => panic!("expected Seq, got {other:?}"),
         }

@@ -51,10 +51,7 @@ pub enum IrExpr {
 
     // ── Stateful ──
     /// Set flag, run body, restore previous value.
-    WithFlag {
-        flag: String,
-        body: Box<IrExpr>,
-    },
+    WithFlag { flag: String, body: Box<IrExpr> },
 
     /// Increment counter, run body, decrement on exit.
     WithCounter {
@@ -70,9 +67,15 @@ pub enum IrExpr {
     },
 
     /// Fail if recursion depth exceeds limit.
-    DepthLimit {
-        limit: u32,
-        body: Box<IrExpr>,
+    DepthLimit { limit: u32, body: Box<IrExpr> },
+
+    /// Fused char-class repeat for efficient codegen (e.g. winnow `take_while`).
+    ///
+    /// Recognized from `Repeat { expr: CharSet(ranges), min, max }` patterns.
+    TakeWhile {
+        ranges: Vec<CharRange>,
+        min: u32,
+        max: Option<u32>,
     },
 }
 

@@ -32,4 +32,7 @@ pub struct IrRule {
     pub emits: Vec<String>,
     /// The matching expression.
     pub expr: IrExpr,
+    /// Number of call sites referencing this rule (set by call-graph analysis).
+    /// 0 means the rule is an entry point (not referenced by any other rule).
+    pub ref_count: usize,
 }

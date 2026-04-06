@@ -9,12 +9,95 @@ use super::{CharRange, IrExpr, IrProgram, IrRule};
 
 /// Run all optimization passes on the program.
 pub fn optimize(program: IrProgram) -> IrProgram {
+    // Phase 1: Normalize
+    let program = single_char_to_charset(program);
     let program = flatten(program);
     let program = merge_charsets(program);
     let program = fuse_literals(program);
+    // Phase 2: Inline trivial rules (may expose new optimization opportunities)
     let program = inline_trivial_rules(program);
+    // Phase 3: Re-normalize after inlining
+    let program = flatten(program);
+    let program = merge_charsets(program);
+    let program = fuse_literals(program);
+    // Phase 4: Recognize fused patterns
+    let program = recognize_take_while(program);
+    // Phase 5: Cleanup
     let program = eliminate_dead_rules(program);
+    let program = compute_ref_counts(program);
     program
+}
+
+// ── Pass 0: Convert single-char Literals to CharSet in Choice ──
+//
+// Inside `Choice` branches, `Literal("x")` where x is a single character
+// → `CharSet([CharRange::single('x')])`.
+// This enables downstream CharSet merging. Only applied in Choice context
+// to avoid interfering with literal fusion in Seq.
+
+fn single_char_to_charset(mut program: IrProgram) -> IrProgram {
+    for rule in &mut program.rules {
+        rule.expr = single_char_to_charset_expr(rule.expr.clone());
+    }
+    program
+}
+
+fn single_char_to_charset_expr(expr: IrExpr) -> IrExpr {
+    match expr {
+        IrExpr::Choice(items) => {
+            let items: Vec<_> = items
+                .into_iter()
+                .map(|item| {
+                    let item = single_char_to_charset_expr(item);
+                    // Convert single-char Literal to CharSet only in Choice context
+                    if let IrExpr::Literal(ref s) = item {
+                        let mut chars = s.chars();
+                        if let (Some(ch), None) = (chars.next(), chars.next()) {
+                            return IrExpr::CharSet(vec![CharRange::single(ch)]);
+                        }
+                    }
+                    item
+                })
+                .collect();
+            IrExpr::Choice(items)
+        }
+        IrExpr::Seq(items) => {
+            IrExpr::Seq(items.into_iter().map(single_char_to_charset_expr).collect())
+        }
+        IrExpr::Repeat { expr, min, max } => IrExpr::Repeat {
+            expr: Box::new(single_char_to_charset_expr(*expr)),
+            min,
+            max,
+        },
+        IrExpr::PosLookahead(inner) => {
+            IrExpr::PosLookahead(Box::new(single_char_to_charset_expr(*inner)))
+        }
+        IrExpr::NegLookahead(inner) => {
+            IrExpr::NegLookahead(Box::new(single_char_to_charset_expr(*inner)))
+        }
+        IrExpr::WithFlag { flag, body } => IrExpr::WithFlag {
+            flag,
+            body: Box::new(single_char_to_charset_expr(*body)),
+        },
+        IrExpr::WithCounter {
+            counter,
+            amount,
+            body,
+        } => IrExpr::WithCounter {
+            counter,
+            amount,
+            body: Box::new(single_char_to_charset_expr(*body)),
+        },
+        IrExpr::When { condition, body } => IrExpr::When {
+            condition,
+            body: Box::new(single_char_to_charset_expr(*body)),
+        },
+        IrExpr::DepthLimit { limit, body } => IrExpr::DepthLimit {
+            limit,
+            body: Box::new(single_char_to_charset_expr(*body)),
+        },
+        other => other,
+    }
 }
 
 // ── Pass 1: Flatten nested Seq/Choice ──
@@ -136,20 +219,14 @@ fn merge_charsets_expr(expr: IrExpr) -> IrExpr {
                 IrExpr::Choice(other)
             }
         }
-        IrExpr::Seq(items) => {
-            IrExpr::Seq(items.into_iter().map(merge_charsets_expr).collect())
-        }
+        IrExpr::Seq(items) => IrExpr::Seq(items.into_iter().map(merge_charsets_expr).collect()),
         IrExpr::Repeat { expr, min, max } => IrExpr::Repeat {
             expr: Box::new(merge_charsets_expr(*expr)),
             min,
             max,
         },
-        IrExpr::PosLookahead(inner) => {
-            IrExpr::PosLookahead(Box::new(merge_charsets_expr(*inner)))
-        }
-        IrExpr::NegLookahead(inner) => {
-            IrExpr::NegLookahead(Box::new(merge_charsets_expr(*inner)))
-        }
+        IrExpr::PosLookahead(inner) => IrExpr::PosLookahead(Box::new(merge_charsets_expr(*inner))),
+        IrExpr::NegLookahead(inner) => IrExpr::NegLookahead(Box::new(merge_charsets_expr(*inner))),
         IrExpr::WithFlag { flag, body } => IrExpr::WithFlag {
             flag,
             body: Box::new(merge_charsets_expr(*body)),
@@ -233,12 +310,8 @@ fn fuse_literals_expr(expr: IrExpr) -> IrExpr {
             min,
             max,
         },
-        IrExpr::PosLookahead(inner) => {
-            IrExpr::PosLookahead(Box::new(fuse_literals_expr(*inner)))
-        }
-        IrExpr::NegLookahead(inner) => {
-            IrExpr::NegLookahead(Box::new(fuse_literals_expr(*inner)))
-        }
+        IrExpr::PosLookahead(inner) => IrExpr::PosLookahead(Box::new(fuse_literals_expr(*inner))),
+        IrExpr::NegLookahead(inner) => IrExpr::NegLookahead(Box::new(fuse_literals_expr(*inner))),
         IrExpr::WithFlag { flag, body } => IrExpr::WithFlag {
             flag,
             body: Box::new(fuse_literals_expr(*body)),
@@ -296,13 +369,7 @@ fn inline_trivial_rules(mut program: IrProgram) -> IrProgram {
     let inline_exprs: Vec<Option<IrExpr>> = program
         .rules
         .iter()
-        .map(|r| {
-            if r.inline {
-                Some(r.expr.clone())
-            } else {
-                None
-            }
-        })
+        .map(|r| if r.inline { Some(r.expr.clone()) } else { None })
         .collect();
 
     for rule in &mut program.rules {
@@ -322,6 +389,7 @@ fn is_trivial(rule: &IrRule) -> bool {
             | IrExpr::CharSet(_)
             | IrExpr::Any
             | IrExpr::Boundary(_)
+            | IrExpr::TakeWhile { .. }
     )
 }
 
@@ -334,12 +402,18 @@ fn inline_refs(expr: IrExpr, inline_exprs: &[Option<IrExpr>]) -> IrExpr {
                 IrExpr::RuleRef(idx)
             }
         }
-        IrExpr::Seq(items) => {
-            IrExpr::Seq(items.into_iter().map(|e| inline_refs(e, inline_exprs)).collect())
-        }
-        IrExpr::Choice(items) => {
-            IrExpr::Choice(items.into_iter().map(|e| inline_refs(e, inline_exprs)).collect())
-        }
+        IrExpr::Seq(items) => IrExpr::Seq(
+            items
+                .into_iter()
+                .map(|e| inline_refs(e, inline_exprs))
+                .collect(),
+        ),
+        IrExpr::Choice(items) => IrExpr::Choice(
+            items
+                .into_iter()
+                .map(|e| inline_refs(e, inline_exprs))
+                .collect(),
+        ),
         IrExpr::Repeat { expr, min, max } => IrExpr::Repeat {
             expr: Box::new(inline_refs(*expr, inline_exprs)),
             min,
@@ -450,12 +524,18 @@ fn collect_refs(expr: &IrExpr, refs: &mut HashSet<usize>) {
 fn reindex_refs(expr: IrExpr, index_map: &[Option<usize>]) -> IrExpr {
     match expr {
         IrExpr::RuleRef(idx) => IrExpr::RuleRef(index_map[idx].expect("dangling rule ref")),
-        IrExpr::Seq(items) => {
-            IrExpr::Seq(items.into_iter().map(|e| reindex_refs(e, index_map)).collect())
-        }
-        IrExpr::Choice(items) => {
-            IrExpr::Choice(items.into_iter().map(|e| reindex_refs(e, index_map)).collect())
-        }
+        IrExpr::Seq(items) => IrExpr::Seq(
+            items
+                .into_iter()
+                .map(|e| reindex_refs(e, index_map))
+                .collect(),
+        ),
+        IrExpr::Choice(items) => IrExpr::Choice(
+            items
+                .into_iter()
+                .map(|e| reindex_refs(e, index_map))
+                .collect(),
+        ),
         IrExpr::Repeat { expr, min, max } => IrExpr::Repeat {
             expr: Box::new(reindex_refs(*expr, index_map)),
             min,
@@ -492,6 +572,114 @@ fn reindex_refs(expr: IrExpr, index_map: &[Option<usize>]) -> IrExpr {
     }
 }
 
+// ── Pass 5.5: Recognize TakeWhile patterns ──
+//
+// `Repeat { expr: CharSet(ranges), min, max }` → `TakeWhile { ranges, min, max }`
+// This enables efficient codegen (e.g. winnow's `take_while`).
+
+fn recognize_take_while(mut program: IrProgram) -> IrProgram {
+    for rule in &mut program.rules {
+        rule.expr = recognize_take_while_expr(rule.expr.clone());
+    }
+    program
+}
+
+fn recognize_take_while_expr(expr: IrExpr) -> IrExpr {
+    match expr {
+        IrExpr::Repeat {
+            expr: inner,
+            min,
+            max,
+        } => {
+            let inner = recognize_take_while_expr(*inner);
+            if let IrExpr::CharSet(ranges) = inner {
+                IrExpr::TakeWhile { ranges, min, max }
+            } else {
+                IrExpr::Repeat {
+                    expr: Box::new(inner),
+                    min,
+                    max,
+                }
+            }
+        }
+        IrExpr::Seq(items) => {
+            IrExpr::Seq(items.into_iter().map(recognize_take_while_expr).collect())
+        }
+        IrExpr::Choice(items) => {
+            IrExpr::Choice(items.into_iter().map(recognize_take_while_expr).collect())
+        }
+        IrExpr::PosLookahead(inner) => {
+            IrExpr::PosLookahead(Box::new(recognize_take_while_expr(*inner)))
+        }
+        IrExpr::NegLookahead(inner) => {
+            IrExpr::NegLookahead(Box::new(recognize_take_while_expr(*inner)))
+        }
+        IrExpr::WithFlag { flag, body } => IrExpr::WithFlag {
+            flag,
+            body: Box::new(recognize_take_while_expr(*body)),
+        },
+        IrExpr::WithCounter {
+            counter,
+            amount,
+            body,
+        } => IrExpr::WithCounter {
+            counter,
+            amount,
+            body: Box::new(recognize_take_while_expr(*body)),
+        },
+        IrExpr::When { condition, body } => IrExpr::When {
+            condition,
+            body: Box::new(recognize_take_while_expr(*body)),
+        },
+        IrExpr::DepthLimit { limit, body } => IrExpr::DepthLimit {
+            limit,
+            body: Box::new(recognize_take_while_expr(*body)),
+        },
+        other => other,
+    }
+}
+
+// ── Pass 7: Compute ref_counts ──
+//
+// Count how many times each rule is referenced from non-inlined rules.
+// ref_count == 0 means the rule is an entry point.
+
+fn compute_ref_counts(mut program: IrProgram) -> IrProgram {
+    let mut counts = vec![0usize; program.rules.len()];
+    for rule in &program.rules {
+        if !rule.inline {
+            count_refs(&rule.expr, &mut counts);
+        }
+    }
+    for (i, rule) in program.rules.iter_mut().enumerate() {
+        rule.ref_count = counts[i];
+    }
+    program
+}
+
+fn count_refs(expr: &IrExpr, counts: &mut [usize]) {
+    match expr {
+        IrExpr::RuleRef(idx) => {
+            counts[*idx] += 1;
+        }
+        IrExpr::Seq(items) | IrExpr::Choice(items) => {
+            for item in items {
+                count_refs(item, counts);
+            }
+        }
+        IrExpr::Repeat { expr, .. }
+        | IrExpr::PosLookahead(expr)
+        | IrExpr::NegLookahead(expr)
+        | IrExpr::WithFlag { body: expr, .. }
+        | IrExpr::WithCounter { body: expr, .. }
+        | IrExpr::When { body: expr, .. }
+        | IrExpr::DepthLimit { body: expr, .. } => {
+            count_refs(expr, counts);
+        }
+        _ => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -506,19 +694,14 @@ mod tests {
     #[test]
     fn charset_merge_in_choice() {
         // alpha = { 'a'..'z' | 'A'..'Z' | "_" }
-        // The two CharSets should merge; "_" as Literal stays separate.
+        // "_" is a single-char Literal → converted to CharSet → all merge.
         let ir = optimized(r#"alpha = { 'a'..'z' | 'A'..'Z' | "_" }"#);
         match &ir.rules[0].expr {
-            IrExpr::Choice(items) => {
-                // First item should be merged CharSet
-                match &items[0] {
-                    IrExpr::CharSet(ranges) => {
-                        assert_eq!(ranges.len(), 2); // A..Z and a..z
-                    }
-                    other => panic!("expected CharSet, got {other:?}"),
-                }
+            IrExpr::CharSet(ranges) => {
+                // A..Z, _, a..z — but _ is adjacent to nothing so 3 ranges
+                assert_eq!(ranges.len(), 3);
             }
-            other => panic!("expected Choice, got {other:?}"),
+            other => panic!("expected CharSet, got {other:?}"),
         }
     }
 
@@ -562,13 +745,16 @@ mod tests {
         "#,
         );
         // digit should be inlined into number.
-        // number's repeat body should be CharSet, not RuleRef.
+        // The Repeat { CharSet } pattern becomes TakeWhile.
         let number = ir.rules.iter().find(|r| r.name == "number").unwrap();
         match &number.expr {
-            IrExpr::Repeat { expr, .. } => {
-                assert!(matches!(**expr, IrExpr::CharSet(_)));
+            IrExpr::TakeWhile { ranges, min, max } => {
+                assert_eq!(ranges.len(), 1);
+                assert_eq!(ranges[0], CharRange::new('0', '9'));
+                assert_eq!(*min, 1);
+                assert_eq!(*max, None);
             }
-            other => panic!("expected Repeat, got {other:?}"),
+            other => panic!("expected TakeWhile, got {other:?}"),
         }
     }
 
@@ -596,11 +782,13 @@ mod tests {
         "#,
         );
         // alpha and digit are trivial → inlined and eliminated.
-        // ident should remain with CharSet in its body.
+        // ident should remain with CharSet + TakeWhile (from the merged repeat).
         let ident = ir.rules.iter().find(|r| r.name == "ident").unwrap();
         match &ident.expr {
             IrExpr::Seq(items) => {
                 assert!(matches!(&items[0], IrExpr::CharSet(_)));
+                // (alpha | digit)* → merged CharSet repeat → TakeWhile
+                assert!(matches!(&items[1], IrExpr::TakeWhile { .. }));
             }
             other => panic!("expected Seq, got {other:?}"),
         }
@@ -632,5 +820,88 @@ mod tests {
         assert!(ir.rules.iter().any(|r| r.name == "special"));
         let main = ir.rules.iter().find(|r| r.name == "main").unwrap();
         assert!(matches!(&main.expr, IrExpr::RuleRef(_)));
+    }
+
+    // ── New pass tests ──
+
+    #[test]
+    fn single_char_literal_to_charset_in_choice() {
+        // Single-char Literals in Choice should merge with CharSets.
+        let ir = optimized(r#"ws = { " " | "\t" | "\n" | "\r" }"#);
+        match &ir.rules[0].expr {
+            IrExpr::CharSet(ranges) => {
+                assert_eq!(ranges.len(), 4); // \t, \n, \r, ' ' (space)
+            }
+            other => panic!("expected CharSet, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn take_while_recognized() {
+        // digit* → TakeWhile { ranges: [('0','9')], min: 0, max: None }
+        let ir = optimized("d = { '0'..'9'* }");
+        match &ir.rules[0].expr {
+            IrExpr::TakeWhile { ranges, min, max } => {
+                assert_eq!(ranges.len(), 1);
+                assert_eq!(ranges[0], CharRange::new('0', '9'));
+                assert_eq!(*min, 0);
+                assert_eq!(*max, None);
+            }
+            other => panic!("expected TakeWhile, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn take_while_from_choice_repeat() {
+        // (" " | "\t" | "\n" | "\r")* → single CharSet from merge → TakeWhile
+        let ir = optimized(r#"ws = { (" " | "\t" | "\n" | "\r")* }"#);
+        match &ir.rules[0].expr {
+            IrExpr::TakeWhile { ranges, min, max } => {
+                assert_eq!(ranges.len(), 4);
+                assert_eq!(*min, 0);
+                assert_eq!(*max, None);
+            }
+            other => panic!("expected TakeWhile, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn take_while_bounded() {
+        // digit{3} → TakeWhile with min=3, max=Some(3)
+        let ir = optimized("d = { '0'..'9'{3} }");
+        match &ir.rules[0].expr {
+            IrExpr::TakeWhile { min, max, .. } => {
+                assert_eq!(*min, 3);
+                assert_eq!(*max, Some(3));
+            }
+            other => panic!("expected TakeWhile, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn ref_count_entry_point() {
+        let ir = optimized(
+            r#"
+            main = { "hello" }
+        "#,
+        );
+        assert_eq!(ir.rules[0].ref_count, 0); // not referenced → entry point
+    }
+
+    #[test]
+    fn ref_count_internal_rule() {
+        let ir = optimized(
+            r#"
+            let flag active
+            special = {
+                guard active
+                "x"
+            }
+            a = { special }
+            b = { special }
+        "#,
+        );
+        let special = ir.rules.iter().find(|r| r.name == "special").unwrap();
+        assert_eq!(special.ref_count, 2); // referenced by a and b
     }
 }
