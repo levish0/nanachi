@@ -8,6 +8,11 @@ use std::process;
 struct Demo;
 
 fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_writer(std::io::stderr)
+        .init();
+
     let path = env::args().nth(1).unwrap_or_else(|| {
         let manifest = env!("CARGO_MANIFEST_DIR");
         format!("{manifest}/sample.txt")

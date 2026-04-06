@@ -7,3 +7,4 @@ publish = false
 [dependencies]
 nanachi.workspace = true
 nanachi_derive.workspace = true
+tracing-subscriber.workspace = true
